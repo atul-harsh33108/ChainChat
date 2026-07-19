@@ -1,0 +1,165 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: chainchat
+      POSTGRES_PASSWORD: chainchat
+      POSTGRES_DB: chainchat
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chainchat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://chainchat:chainchat@postgres:5432/chainchat?options=-c%20search_path=auth
+      - REDIS_URL=redis://redis:6379/0
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-placeholder}
+      - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET:-placeholder}
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/auth-service:/app
+    command: uvicorn src.auth_service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  workflow-service:
+    build:
+      context: ./services/workflow-service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://chainchat:chainchat@postgres:5432/chainchat?options=-c%20search_path=workflow
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/workflow-service:/app
+    command: uvicorn src.workflow_service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  execution-service:
+    build:
+      context: ./services/execution-service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://chainchat:chainchat@postgres:5432/chainchat?options=-c%20search_path=execution
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-placeholder}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-placeholder}
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/execution-service:/app
+    command: uvicorn src.execution_service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  billing-service:
+    build:
+      context: ./services/billing-service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://chainchat:chainchat@postgres:5432/chainchat?options=-c%20search_path=billing
+      - REDIS_URL=redis://redis:6379/0
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-placeholder}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-placeholder}
+    ports:
+      - "8004:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/billing-service:/app
+    command: uvicorn src.billing_service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://chainchat:chainchat@postgres:5432/chainchat?options=-c%20search_path=notification
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8005:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/notification-service:/app
+    command: uvicorn src.notification_service.main:app --host 0.0.0.0 --port 8000 --reload
+
+  gateway:
+    build:
+      context: ./services/gateway
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CLERK_JWKS_URL=${CLERK_JWKS_URL:-https://placeholder.clerk.accounts.dev/.well-known/jwks.json}
+      - AUTH_SERVICE_URL=http://auth-service:8000
+      - WORKFLOW_SERVICE_URL=http://workflow-service:8000
+      - EXECUTION_SERVICE_URL=http://execution-service:8000
+      - BILLING_SERVICE_URL=http://billing-service:8000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - workflow-service
+      - execution-service
+      - billing-service
+      - notification-service
+      - redis
+    volumes:
+      - ./services/gateway:/app
+    command: uvicorn src.gateway.main:app --host 0.0.0.0 --port 8000 --reload
+
+  web:
+    build:
+      context: ./apps/web
+      target: dev
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY:-placeholder}
+    ports:
+      - "5173:5173"
+    depends_on:
+      - gateway
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:

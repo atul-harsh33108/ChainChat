@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npx tailwindcss *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/pip install *)",
+      "Bash(.venv/Scripts/python -c \"from src.gateway.main import app; print\\('Gateway imports OK'\\)\")",
+      "Bash(.venv/Scripts/python -c \"from src.auth_service.main import app; print\\('Auth service imports OK'\\)\")",
+      "Bash(.venv/Scripts/pytest tests *)",
+      "Bash(.venv/Scripts/pytest tests/test_health.py)"
+    ]
+  }
+}

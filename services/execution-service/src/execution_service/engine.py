@@ -1,0 +1,185 @@
+import asyncio
+from collections import deque
+from datetime import datetime, timezone
+from typing import Any
+
+import structlog
+from redis import Redis
+from rq import Queue
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
+
+from src.execution_service.ai import get_provider
+from src.execution_service.config import settings
+from src.execution_service.db import AsyncSessionLocal
+from src.execution_service.models import Execution, ExecutionStep
+
+logger = structlog.get_logger()
+
+_redis_conn = Redis.from_url(settings.redis_url)
+queue = Queue("execution", connection=_redis_conn)
+
+
+class ExecutionCancelledError(Exception):
+    """Raised when an execution is cancelled while running."""
+
+
+async def _load_execution(session: AsyncSession, execution_id: Any) -> Execution:
+    result = await session.execute(
+        select(Execution)
+        .where(Execution.id == execution_id)
+        .options(selectinload(Execution.steps))
+    )
+    return result.scalar_one()
+
+
+async def _mark_step_status(
+    session: AsyncSession,
+    step: ExecutionStep,
+    status: str,
+    outputs: dict[str, Any] | None = None,
+    error: str | None = None,
+) -> None:
+    step.status = status
+    if outputs is not None:
+        step.outputs = outputs
+    if error is not None:
+        step.error_message = error
+
+    now = datetime.now(timezone.utc)
+    if status == "running" and step.started_at is None:
+        step.started_at = now
+    if status in ("completed", "failed"):
+        step.completed_at = now
+
+    await session.commit()
+
+
+async def _check_cancelled(session: AsyncSession, execution: Execution) -> bool:
+    await session.refresh(execution)
+    return execution.status == "cancelled"
+
+
+async def _run_step_with_retries(
+    session: AsyncSession,
+    execution: Execution,
+    step: ExecutionStep,
+    context: dict[str, Any],
+    max_retries: int = 2,
+) -> dict[str, Any]:
+    provider = get_provider(step.provider)
+    prompt = step.prompt or ""
+    variables = {**(step.inputs or {}), **context}
+    rendered = prompt.format(**variables) if variables else prompt
+
+    for attempt in range(max_retries + 1):
+        if await _check_cancelled(session, execution):
+            raise ExecutionCancelledError()
+
+        step.retry_count = attempt
+        await _mark_step_status(session, step, "running")
+
+        try:
+            logger.info(
+                "step_running",
+                execution_id=str(execution.id),
+                step_key=step.step_key,
+                attempt=attempt,
+            )
+            text = await provider.complete(rendered, **{"model": step.model_key})
+            outputs = {"text": text}
+            await _mark_step_status(session, step, "completed", outputs=outputs)
+            return outputs
+        except Exception as exc:
+            logger.warning(
+                "step_failed",
+                execution_id=str(execution.id),
+                step_key=step.step_key,
+                attempt=attempt,
+                error=str(exc),
+            )
+            if attempt >= max_retries:
+                await _mark_step_status(session, step, "failed", error=str(exc))
+                raise
+            await asyncio.sleep(1 * (attempt + 1))
+
+    return {}
+
+
+async def _topological_steps(steps: list[ExecutionStep]) -> list[ExecutionStep]:
+    step_map = {s.step_key: s for s in steps}
+    in_degree = {s.step_key: len(s.depends_on or []) for s in steps}
+    dependents = {s.step_key: [] for s in steps}
+
+    for s in steps:
+        for dep in s.depends_on or []:
+            if dep not in step_map:
+                raise ValueError(f"Unknown dependency: {dep}")
+            dependents[dep].append(s.step_key)
+
+    ready = deque([key for key, deg in in_degree.items() if deg == 0])
+    ordered: list[ExecutionStep] = []
+
+    while ready:
+        key = ready.popleft()
+        ordered.append(step_map[key])
+        for dep_key in dependents[key]:
+            in_degree[dep_key] -= 1
+            if in_degree[dep_key] == 0:
+                ready.append(dep_key)
+
+    if len(ordered) != len(steps):
+        raise ValueError("Cycle detected in execution step dependencies")
+
+    return ordered
+
+
+async def run_execution(execution_id: Any, max_retries: int = 2) -> None:
+    """Run all steps of an execution in dependency order with retries."""
+    async with AsyncSessionLocal() as session:
+        execution = await _load_execution(session, execution_id)
+        if execution.status in ("completed", "failed", "cancelled"):
+            logger.info("execution_already_terminal", status=execution.status)
+            return
+
+        execution.status = "running"
+        await session.commit()
+
+        context: dict[str, Any] = dict(execution.input_payload or {})
+
+        try:
+            ordered = await _topological_steps(list(execution.steps))
+            for step in ordered:
+                if await _check_cancelled(session, execution):
+                    raise ExecutionCancelledError()
+
+                outputs = await _run_step_with_retries(
+                    session, execution, step, context, max_retries=max_retries
+                )
+                context[step.step_key] = outputs
+
+            execution.output_payload = context
+            execution.status = "completed"
+            logger.info("execution_completed", execution_id=str(execution.id))
+        except ExecutionCancelledError:
+            execution.status = "cancelled"
+            logger.info("execution_cancelled", execution_id=str(execution.id))
+        except Exception as exc:
+            execution.status = "failed"
+            execution.error_message = str(exc)
+            logger.error("execution_failed", execution_id=str(execution.id), error=str(exc))
+        finally:
+            execution.updated_at = datetime.now(timezone.utc)
+            await session.commit()
+
+
+def run_execution_sync(execution_id: Any, max_retries: int = 2) -> None:
+    """Synchronous wrapper for RQ workers."""
+    asyncio.run(run_execution(execution_id, max_retries=max_retries))
+
+
+def enqueue_execution(execution_id: Any) -> str:
+    """Enqueue an execution job on the RQ queue."""
+    job = queue.enqueue(run_execution_sync, str(execution_id))
+    return str(job.id)
