@@ -1,11 +1,14 @@
 from typing import Any, Protocol
 
 import httpx
-import structlog
 
 from src.execution_service.config import settings
 
-logger = structlog.get_logger()
+# OpenRouter free model identifiers.
+# Verify current IDs at https://openrouter.ai/models if a request 404s.
+GEMMA_FREE = "google/gemma-4-31b-it:free"
+NEMOTRON_FREE = "nvidia/nemotron-3-ultra-550b-a55b:free"
+DEFAULT_MODEL = GEMMA_FREE
 
 
 class AIProvider(Protocol):
@@ -17,17 +20,29 @@ class AIProvider(Protocol):
         ...
 
 
-class OpenAIProvider:
-    """OpenAI chat completions provider."""
+class OpenRouterProvider:
+    """OpenAI-compatible provider backed by OpenRouter.
 
-    model_key = "openai"
-    base_url = "https://api.openai.com/v1"
+    OpenRouter exposes an OpenAI-compatible ``/chat/completions`` endpoint, so a
+    single request/response shape works for every model in its catalogue
+    (Google Gemma, NVIDIA Nemotron, OpenAI, Anthropic, etc.). The API key is
+    read from ``settings.openai_api_key`` — set ``OPENAI_API_KEY`` to your
+    OpenRouter key.
+    """
+
+    model_key = "openrouter"
+    base_url = "https://openrouter.ai/api/v1"
 
     def __init__(self, api_key: str | None = None) -> None:
         self.api_key = api_key or settings.openai_api_key
         self.client = httpx.AsyncClient(
             base_url=self.base_url,
-            headers={"Authorization": f"Bearer {self.api_key}"},
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                # Optional attribution headers recommended by OpenRouter.
+                "HTTP-Referer": "http://localhost:5173",
+                "X-Title": "ChainChat",
+            },
             timeout=60.0,
         )
 
@@ -37,8 +52,8 @@ class OpenAIProvider:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
-        payload = {
-            "model": kwargs.get("model", "gpt-4o-mini"),
+        payload: dict[str, Any] = {
+            "model": kwargs.get("model") or DEFAULT_MODEL,
             "messages": messages,
             "temperature": kwargs.get("temperature", 0.7),
             "max_tokens": kwargs.get("max_tokens", 2048),
@@ -50,45 +65,15 @@ class OpenAIProvider:
         return data["choices"][0]["message"]["content"]
 
 
-class AnthropicProvider:
-    """Anthropic messages provider."""
-
-    model_key = "anthropic"
-    base_url = "https://api.anthropic.com"
-
-    def __init__(self, api_key: str | None = None) -> None:
-        self.api_key = api_key or settings.anthropic_api_key
-        self.client = httpx.AsyncClient(
-            base_url=self.base_url,
-            headers={
-                "x-api-key": self.api_key,
-                "anthropic-version": "2023-06-01",
-                "Content-Type": "application/json",
-            },
-            timeout=60.0,
-        )
-
-    async def complete(self, prompt: str, system: str | None = None, **kwargs: Any) -> str:
-        payload: dict[str, Any] = {
-            "model": kwargs.get("model", "claude-3-5-sonnet-20241022"),
-            "max_tokens": kwargs.get("max_tokens", 2048),
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        if system:
-            payload["system"] = system
-        if "temperature" in kwargs:
-            payload["temperature"] = kwargs["temperature"]
-
-        response = await self.client.post("/v1/messages", json=payload)
-        response.raise_for_status()
-        data = response.json()
-        return data["content"][0]["text"]
-
-
-# Registry keyed by provider identifier. Model keys are passed to the provider itself.
+# Every provider key routes through OpenRouter's OpenAI-compatible endpoint.
+# The actual model is chosen per execution step via ``model_key`` (e.g.
+# "google/gemma-4-31b-it:free" or "nvidia/nemotron-3-ultra-550b-a55b:free").
 _registry: dict[str, type] = {
-    "openai": OpenAIProvider,
-    "anthropic": AnthropicProvider,
+    "openrouter": OpenRouterProvider,
+    "openai": OpenRouterProvider,
+    "anthropic": OpenRouterProvider,
+    "google": OpenRouterProvider,
+    "nvidia": OpenRouterProvider,
 }
 
 

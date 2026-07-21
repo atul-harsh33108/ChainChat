@@ -34,7 +34,7 @@ export function WorkflowListPage() {
           type: 'prompt',
           position: { x: 350, y: 150 },
           label: 'Prompt',
-          config: { modelKey: 'openai/gpt-4o', temperature: 0.7 },
+          config: { modelKey: 'google/gemma-4-31b-it:free', temperature: 0.7 },
         },
       ],
       edges: [{ id: 'e1', source: 'start', target: 'prompt-1' }],

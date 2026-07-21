@@ -87,7 +87,7 @@ function Builder() {
         id,
         type: type === 'start' ? 'input' : 'default',
         position: { x: 250 + prev.length * 30, y: 150 + prev.length * 30 },
-        data: { label: type, config: { modelKey: 'openai/gpt-4o', temperature: 0.7 } },
+        data: { label: type, config: { modelKey: 'google/gemma-4-31b-it:free', temperature: 0.7 } },
       },
     ])
   }
