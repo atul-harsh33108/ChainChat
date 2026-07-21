@@ -47,10 +47,23 @@ chainchat/
 
 ## Documentation
 
+- [How It Works (implementation ground truth)](docs/HOW-IT-WORKS.md) — how the product actually behaves as built, including what's real vs. still stubbed
 - [High-Level Design (HLD)](docs/HLD.md)
 - [Low-Level Design (LLD)](docs/LLD.md)
 - [Architecture & Developer Guide](docs/ARCHITECTURE.md)
 - [Production Runbook](docs/RUNBOOK.md)
+
+## How It Works (at a glance)
+
+A React/Vite SPA authenticates with Clerk and calls a single FastAPI **gateway**, which
+validates the JWT, injects `x-user-id` / `x-workspace-id` / `x-role` headers, and proxies
+each request by path prefix to one of six services. Today the **workflow-service** (real
+CRUD, versions, forks, templates) and **execution-service** (a real DAG engine that runs
+prompt-chain steps in dependency order, with retries and cancellation, calling live LLMs
+through OpenRouter and streaming progress over polling-based SSE) are fully implemented.
+The **auth-service**, **notification-service**, Clerk webhook sync, cross-service events,
+and parts of **billing** are still placeholders. See
+[docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) for the full descriptive walkthrough.
 
 ## Services
 
