@@ -58,12 +58,14 @@ async def create_workflow(
         owner_id=user_id,
         name=payload.name,
         description=payload.description,
-        metadata=payload.metadata,
+        meta_data=payload.meta_data,
     )
     db.add(workflow)
     await db.commit()
     await db.refresh(workflow)
-    logger.info("workflow_created", workflow_id=str(workflow.id), user_id=str(user_id))
+    logger.info("workflow_created", workflow_Describe what you are looking for in your next job
+Startups tell us this is one of the first things they look at in a profile
+0 / 300id=str(workflow.id), user_id=str(user_id))
     return workflow
 
 
@@ -151,7 +153,7 @@ async def fork_workflow(
         name=new_name,
         description=source.description,
         parent_id=source.id,
-        metadata=source.metadata,
+        meta_data=source.meta_data,
     )
     db.add(forked)
     await db.flush()
@@ -169,7 +171,7 @@ async def fork_workflow(
             change_summary=source_version.change_summary,
             status=source_version.status,
             graph=source_version.graph,
-            metadata=source_version.metadata,
+            meta_data=source_version.meta_data,
             created_by=user_id,
         )
         db.add(version)
@@ -257,7 +259,7 @@ async def create_workflow_version(
         change_summary=payload.change_summary,
         status=payload.status,
         graph=payload.graph,
-        metadata=payload.metadata,
+        meta_data=payload.meta_data,
         created_by=user_id,
     )
     db.add(version)

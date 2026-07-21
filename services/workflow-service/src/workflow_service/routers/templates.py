@@ -70,7 +70,7 @@ async def apply_template(
         owner_id=payload.owner_id,
         name=payload.name or template.name,
         description=template.description,
-        metadata=template.metadata,
+        meta_data=template.meta_data,
     )
     db.add(workflow)
     await db.flush()
@@ -82,7 +82,7 @@ async def apply_template(
         name="Initial version from template",
         status="draft",
         graph=template.graph,
-        metadata=template.metadata,
+        meta_data=template.meta_data,
         created_by=user_id,
     )
     db.add(version)
