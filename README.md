@@ -47,6 +47,7 @@ chainchat/
 
 ## Documentation
 
+- [Product Pitch (plain-language overview)](docs/PRODUCT-PITCH.md) — what ChainChat is, the problem it solves, and how it works for a non-technical reader
 - [How It Works (implementation ground truth)](docs/HOW-IT-WORKS.md) — how the product actually behaves as built, including what's real vs. still stubbed
 - [High-Level Design (HLD)](docs/HLD.md)
 - [Low-Level Design (LLD)](docs/LLD.md)
