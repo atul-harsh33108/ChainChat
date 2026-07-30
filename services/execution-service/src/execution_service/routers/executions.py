@@ -10,7 +10,7 @@ from sqlalchemy import desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from src.execution_service.db import get_db
+from src.execution_service.db import AsyncSessionLocal, get_db
 from src.execution_service.engine import enqueue_execution
 from src.execution_service.models import Execution, ExecutionStep
 from src.execution_service.schemas import ExecutionCreate, ExecutionRead
@@ -56,10 +56,19 @@ async def create_execution(data: ExecutionCreate, db: AsyncSession = Depends(get
 
 @router.get("", response_model=list[ExecutionRead])
 async def list_executions(
-    db: AsyncSession = Depends(get_db), limit: int = 100, offset: int = 0
+    db: AsyncSession = Depends(get_db),
+    chain_id: UUID | None = None,
+    workspace_id: UUID | None = None,
+    limit: int = 100,
+    offset: int = 0,
 ):
+    query = select(Execution)
+    if chain_id:
+        query = query.where(Execution.chain_id == chain_id)
+    if workspace_id:
+        query = query.where(Execution.workspace_id == workspace_id)
     result = await db.execute(
-        select(Execution).order_by(desc(Execution.created_at)).limit(limit).offset(offset)
+        query.order_by(desc(Execution.created_at)).limit(limit).offset(offset)
     )
     return result.scalars().all()
 
@@ -77,23 +86,28 @@ def _sse_event(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
-async def _execution_stream(
-    execution_id: UUID, db: AsyncSession
-) -> AsyncGenerator[str, None]:
+async def _execution_stream(execution_id: UUID) -> AsyncGenerator[str, None]:
+    """Poll the execution and emit SSE updates until it reaches a terminal state.
+
+    Uses a fresh session per poll rather than the request-scoped one: the worker
+    writes from a different session, and a long-lived session would keep serving
+    stale identity-mapped rows (and outlive the request scope).
+    """
     last_status: str | None = None
     last_step_count = -1
 
     while True:
-        result = await db.execute(select(Execution).where(Execution.id == execution_id))
-        execution = result.scalar_one_or_none()
-        if not execution:
-            yield _sse_event("error", {"detail": "Execution not found"})
-            break
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(Execution).where(Execution.id == execution_id)
+            )
+            execution = result.scalar_one_or_none()
+            if not execution:
+                yield _sse_event("error", {"detail": "Execution not found"})
+                break
 
-        payload = {
-            "id": str(execution.id),
-            "status": execution.status,
-            "steps": [
+            status_value = execution.status
+            steps = [
                 {
                     "step_key": s.step_key,
                     "status": s.status,
@@ -102,15 +116,16 @@ async def _execution_stream(
                     "error_message": s.error_message,
                 }
                 for s in execution.steps
-            ],
-        }
+            ]
 
-        if execution.status != last_status or len(execution.steps) != last_step_count:
+        payload = {"id": str(execution_id), "status": status_value, "steps": steps}
+
+        if status_value != last_status or len(steps) != last_step_count:
             yield _sse_event("status", payload)
-            last_status = execution.status
-            last_step_count = len(execution.steps)
+            last_status = status_value
+            last_step_count = len(steps)
 
-        if execution.status in ("completed", "failed", "cancelled"):
+        if status_value in ("completed", "failed", "cancelled"):
             yield _sse_event("done", payload)
             break
 
@@ -123,7 +138,7 @@ async def stream_execution(execution_id: UUID, db: AsyncSession = Depends(get_db
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Execution not found")
     return StreamingResponse(
-        _execution_stream(execution_id, db), media_type="text/event-stream"
+        _execution_stream(execution_id), media_type="text/event-stream"
     )
 
 

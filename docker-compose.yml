@@ -84,6 +84,25 @@ services:
       - ./services/execution-service:/app
     command: uvicorn src.execution_service.main:app --host 0.0.0.0 --port 8000 --reload
 
+  # Processes queued executions. Without this, POST /executions enqueues a job
+  # that nothing ever picks up and the run stays "pending".
+  execution-worker:
+    build:
+      context: ./services/execution-service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://chainchat:chainchat@postgres:5432/chainchat
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-placeholder}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-placeholder}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/execution-service:/app
+    command: rq worker execution --url redis://redis:6379/0
+
   billing-service:
     build:
       context: ./services/billing-service

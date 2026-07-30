@@ -1,4 +1,5 @@
 import asyncio
+import re
 from collections import deque
 from datetime import datetime, timezone
 from typing import Any
@@ -61,6 +62,32 @@ async def _check_cancelled(session: AsyncSession, execution: Execution) -> bool:
     return execution.status == "cancelled"
 
 
+_PLACEHOLDER = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
+def _render_prompt(template: str, variables: dict[str, Any]) -> str:
+    """Substitute ``{name}`` placeholders, leaving unknown ones untouched.
+
+    ``str.format`` is unusable here: a literal brace in a prompt raises
+    ValueError, a missing key raises KeyError, and a prior step's output (a dict
+    like ``{"text": ...}``) would render as a Python repr. This resolves step
+    outputs to their text and passes anything unrecognised through unchanged.
+    """
+    if not template:
+        return ""
+
+    def replace(match: "re.Match[str]") -> str:
+        key = match.group(1)
+        if key not in variables:
+            return match.group(0)
+        value = variables[key]
+        if isinstance(value, dict) and "text" in value:
+            return str(value["text"])
+        return str(value)
+
+    return _PLACEHOLDER.sub(replace, template)
+
+
 async def _run_step_with_retries(
     session: AsyncSession,
     execution: Execution,
@@ -69,9 +96,8 @@ async def _run_step_with_retries(
     max_retries: int = 2,
 ) -> dict[str, Any]:
     provider = get_provider(step.provider)
-    prompt = step.prompt or ""
     variables = {**(step.inputs or {}), **context}
-    rendered = prompt.format(**variables) if variables else prompt
+    rendered = _render_prompt(step.prompt or "", variables)
 
     for attempt in range(max_retries + 1):
         if await _check_cancelled(session, execution):

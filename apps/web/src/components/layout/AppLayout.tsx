@@ -36,7 +36,10 @@ export function AppLayout() {
     }
   }, [organization, organizationList, setCurrentWorkspace])
 
-  const activeId = workspaceId || currentWorkspaceId || organization?.id
+  // Organizations may be disabled on the Clerk instance, in which case there is
+  // no organization to act as the workspace. Fall back to the user's own id so
+  // the app still has a stable workspace identifier ("personal workspace").
+  const activeId = workspaceId || currentWorkspaceId || organization?.id || user?.id
 
   return (
     <div className="flex h-screen w-full overflow-hidden">

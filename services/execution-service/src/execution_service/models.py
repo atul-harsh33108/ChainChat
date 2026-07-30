@@ -31,6 +31,9 @@ class Execution(Base):
         back_populates="execution",
         cascade="all, delete-orphan",
         order_by="ExecutionStep.created_at",
+        # Eager-load: responses serialize `steps`, and lazy loading inside async
+        # request handlers raises MissingGreenlet.
+        lazy="selectin",
     )
 
 

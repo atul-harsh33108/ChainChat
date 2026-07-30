@@ -2,7 +2,9 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from src.execution_service.ids import to_uuid
 
 
 class ExecutionStepCreate(BaseModel):
@@ -19,6 +21,12 @@ class ExecutionCreate(BaseModel):
     chain_id: UUID
     input_payload: dict[str, Any] | None = None
     steps: list[ExecutionStepCreate]
+
+    @field_validator("workspace_id", "chain_id", mode="before")
+    @classmethod
+    def _coerce_ids(cls, value: Any) -> Any:
+        # Accept external (Clerk) identifiers, not just UUIDs.
+        return to_uuid(value) if value is not None else value
 
 
 class ExecutionStepRead(BaseModel):

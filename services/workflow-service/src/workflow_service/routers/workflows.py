@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.workflow_service.db import get_db
+from src.workflow_service.ids import to_uuid
 from src.workflow_service.models import Workflow, WorkflowEdge, WorkflowNode, WorkflowVersion
 from src.workflow_service.schemas import (
     WorkflowCreate,
@@ -26,19 +27,20 @@ def _current_user_id(request: Request) -> UUID:
     user_id = request.headers.get("x-user-id")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing x-user-id header")
-    return UUID(user_id)
+    # Clerk IDs ("user_2abc...") are not UUIDs, so map them deterministically.
+    return to_uuid(user_id)
 
 
 @router.get("", response_model=list[WorkflowRead])
 async def list_workflows(
     request: Request,
-    workspace_id: UUID | None = None,
+    workspace_id: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     user_id = _current_user_id(request)
     query = select(Workflow).options(selectinload(Workflow.versions))
     if workspace_id:
-        query = query.where(Workflow.workspace_id == workspace_id)
+        query = query.where(Workflow.workspace_id == to_uuid(workspace_id))
     result = await db.execute(query)
     workflows = result.scalars().all()
     logger.info("workflows_listed", count=len(workflows), user_id=str(user_id))
@@ -63,9 +65,7 @@ async def create_workflow(
     db.add(workflow)
     await db.commit()
     await db.refresh(workflow)
-    logger.info("workflow_created", workflow_Describe what you are looking for in your next job
-Startups tell us this is one of the first things they look at in a profile
-0 / 300id=str(workflow.id), user_id=str(user_id))
+    logger.info("workflow_created", workflow_id=str(workflow.id), user_id=str(user_id))
     return workflow
 
 

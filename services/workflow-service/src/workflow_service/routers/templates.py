@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.workflow_service.db import get_db
+from src.workflow_service.ids import to_uuid
 from src.workflow_service.models import Template, Workflow, WorkflowVersion
 from src.workflow_service.schemas import TemplateApplyRequest, TemplateApplyResponse, TemplateRead
 
@@ -17,7 +18,8 @@ def _current_user_id(request: Request) -> UUID:
     user_id = request.headers.get("x-user-id")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing x-user-id header")
-    return UUID(user_id)
+    # Clerk IDs ("user_2abc...") are not UUIDs, so map them deterministically.
+    return to_uuid(user_id)
 
 
 @router.get("", response_model=list[TemplateRead])

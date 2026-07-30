@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import ReactFlow, {
   Background,
@@ -9,10 +9,21 @@ import ReactFlow, {
   useEdgesState,
   ReactFlowProvider,
   type Connection,
+  type Node,
+  type Edge,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
-import { useOrganization } from '@clerk/clerk-react'
-import { useWorkflow, useUpdateWorkflow, useCreateWorkflow } from '@/hooks/workflows'
+import { useOrganization, useUser } from '@clerk/clerk-react'
+import {
+  useWorkflow,
+  useUpdateWorkflow,
+  useCreateWorkflow,
+  useCreateVersion,
+  useRunWorkflow,
+  useForkWorkflow,
+  useExecution,
+  GraphValidationError,
+} from '@/hooks/workflows'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,133 +39,252 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import type { WorkflowNode } from '@/types'
-import { Play, Save, Share2, GitFork, ArrowLeft, History } from 'lucide-react'
+import type { GraphNode, NodeConfig, NodeType, WorkflowGraph } from '@/types'
+import { DEFAULT_MODEL, FREE_MODELS, EMPTY_GRAPH, latestVersion, toStepKey } from '@/lib/graph'
+import { Play, Save, GitFork, ArrowLeft, History, Trash2 } from 'lucide-react'
 
-const nodeTypes = {}
+/** React Flow node data carried in the canvas. */
+interface NodeData {
+  label: string
+  nodeType: NodeType
+  config: NodeConfig
+}
+
+function reactFlowType(type: NodeType): string {
+  if (type === 'start') return 'input'
+  if (type === 'output') return 'output'
+  return 'default'
+}
 
 function Builder() {
   const { workspaceId, workflowId } = useParams()
   const { organization } = useOrganization()
+  const { user } = useUser()
   const navigate = useNavigate()
-  const activeId = workspaceId || organization?.id
+  const activeId = workspaceId || organization?.id || user?.id
   const isNew = workflowId === 'new'
 
   const { data: existing, isLoading } = useWorkflow(isNew ? undefined : workflowId)
   const updateWorkflow = useUpdateWorkflow()
   const createWorkflow = useCreateWorkflow()
+  const createVersion = useCreateVersion()
+  const runWorkflow = useRunWorkflow()
+  const forkWorkflow = useForkWorkflow()
 
   const [name, setName] = useState('Untitled workflow')
   const [description, setDescription] = useState('')
-  const [isPublic, setIsPublic] = useState(false)
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
+  const [nodes, setNodes, onNodesChange] = useNodesState<NodeData>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [runId, setRunId] = useState<string | null>(null)
+  const { data: run } = useExecution(runId ?? undefined)
+  const notifiedRef = useRef<string | null>(null)
 
+  // Hydrate the canvas from the newest saved version.
   useEffect(() => {
-    if (existing) {
-      setName(existing.name)
-      setDescription(existing.description || '')
-      setIsPublic(existing.isPublic)
-      setNodes(
-        existing.nodes.map((n) => ({
-          id: n.id,
-          type: n.type === 'start' ? 'input' : 'default',
-          position: n.position,
-          data: { label: n.label || n.type, config: n.config },
-        }))
-      )
-      setEdges(
-        existing.edges.map((e) => ({
-          id: e.id,
-          source: e.source,
-          target: e.target,
-          label: e.label,
-        }))
-      )
+    if (!existing) return
+    setName(existing.name)
+    setDescription(existing.description || '')
+
+    const graph = latestVersion(existing.versions)?.graph || EMPTY_GRAPH
+    setNodes(
+      (graph.nodes || []).map((n) => ({
+        id: n.id,
+        type: reactFlowType(n.type),
+        position: n.position || { x: 0, y: 0 },
+        data: {
+          label: n.label || n.type,
+          nodeType: n.type,
+          config: n.config || {},
+        },
+      }))
+    )
+    setEdges(
+      (graph.edges || []).map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        label: e.label,
+      }))
+    )
+  }, [existing, setNodes, setEdges])
+
+  // Notify once when a run reaches a terminal state.
+  useEffect(() => {
+    if (!run || notifiedRef.current === run.id) return
+    if (run.status === 'completed' || run.status === 'failed' || run.status === 'cancelled') {
+      notifiedRef.current = run.id
+      toast({
+        title: run.status === 'completed' ? 'Run completed' : `Run ${run.status}`,
+        description: run.error_message || undefined,
+        variant: run.status === 'completed' ? undefined : 'destructive',
+      })
     }
-  }, [existing, setEdges, setNodes])
+  }, [run])
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   )
 
-  const addNode = (type: WorkflowNode['type']) => {
-    const id = `${type}-${nodes.length + 1}`
+  const addNode = (type: NodeType) => {
+    const id = `${type}_${Date.now().toString(36)}`
     setNodes((prev) => [
       ...prev,
       {
         id,
-        type: type === 'start' ? 'input' : 'default',
-        position: { x: 250 + prev.length * 30, y: 150 + prev.length * 30 },
-        data: { label: type, config: { modelKey: 'google/gemma-4-31b-it:free', temperature: 0.7 } },
+        type: reactFlowType(type),
+        position: { x: 250 + prev.length * 40, y: 120 + prev.length * 40 },
+        data: {
+          label: type === 'prompt' ? 'Prompt' : type,
+          nodeType: type,
+          config: type === 'prompt' ? { model: DEFAULT_MODEL, temperature: 0.7, prompt: '' } : {},
+        },
       },
     ])
+    setSelectedId(id)
   }
 
-  const handleSave = async () => {
-    if (!activeId) return
-    const payload = {
-      name,
-      description,
-      isPublic,
-      nodes: nodes.map((n) => ({
-        id: n.id,
-        type: n.type === 'input' ? 'start' : (n.data.label as WorkflowNode['type']),
-        position: n.position,
-        label: n.data.label as string,
-        config: n.data.config,
-      })),
-      edges: edges.map((e) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        label: typeof e.label === 'string' ? e.label : undefined,
-      })),
+  const selected = useMemo(
+    () => nodes.find((n) => n.id === selectedId) || null,
+    [nodes, selectedId]
+  )
+
+  const updateSelected = (patch: Partial<NodeData>) => {
+    if (!selectedId) return
+    setNodes((prev) =>
+      prev.map((n) => (n.id === selectedId ? { ...n, data: { ...n.data, ...patch } } : n))
+    )
+  }
+
+  const updateSelectedConfig = (patch: Partial<NodeConfig>) => {
+    if (!selected) return
+    updateSelected({ config: { ...selected.data.config, ...patch } })
+  }
+
+  const deleteSelected = () => {
+    if (!selectedId) return
+    setNodes((prev) => prev.filter((n) => n.id !== selectedId))
+    setEdges((prev) => prev.filter((e) => e.source !== selectedId && e.target !== selectedId))
+    setSelectedId(null)
+  }
+
+  const buildGraph = useCallback((): WorkflowGraph => {
+    const graphNodes: GraphNode[] = (nodes as Node<NodeData>[]).map((n) => ({
+      id: n.id,
+      type: n.data.nodeType,
+      label: n.data.label,
+      position: n.position,
+      config: n.data.config,
+    }))
+    const graphEdges = (edges as Edge[]).map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      label: typeof e.label === 'string' ? e.label : undefined,
+    }))
+    return { nodes: graphNodes, edges: graphEdges }
+  }, [nodes, edges])
+
+  const handleSave = async (): Promise<string | null> => {
+    if (!activeId) {
+      toast({ title: 'No workspace selected', variant: 'destructive' })
+      return null
     }
+    const graph = buildGraph()
     try {
+      let id = workflowId
       if (isNew) {
-        const created = await createWorkflow.mutateAsync({ workspaceId: activeId, ...payload })
-        toast({ title: 'Workflow created' })
-        navigate(`/app/w/${activeId}/workflows/${created.id}`)
-      } else if (workflowId) {
-        await updateWorkflow.mutateAsync({ id: workflowId, ...payload })
-        toast({ title: 'Workflow saved' })
+        const created = await createWorkflow.mutateAsync({
+          workspace_id: activeId,
+          name,
+          description,
+        })
+        id = created.id
+      } else if (id) {
+        await updateWorkflow.mutateAsync({ id, name, description })
       }
+      if (!id) return null
+
+      // Graph content is stored as a new immutable version.
+      await createVersion.mutateAsync({ workflowId: id, graph, changeSummary: 'Edited in builder' })
+
+      toast({ title: isNew ? 'Workflow created' : 'Workflow saved' })
+      if (isNew) navigate(`/app/w/${activeId}/workflows/${id}`)
+      return id
     } catch (err) {
       toast({
         title: 'Save failed',
-        description: err instanceof Error ? err.message : 'Unknown error',
+        description: errorMessage(err),
         variant: 'destructive',
       })
+      return null
     }
   }
 
+  const handleRun = async () => {
+    if (!activeId) return
+    // Persist first so the run always matches what is on screen.
+    const id = await handleSave()
+    if (!id) return
+
+    try {
+      const execution = await runWorkflow.mutateAsync({
+        workspaceId: activeId,
+        workflowId: id,
+        graph: buildGraph(),
+      })
+      setRunId(execution.id)
+      toast({ title: 'Run started', description: `Execution ${execution.id.slice(0, 8)}` })
+    } catch (err) {
+      toast({ title: 'Run failed', description: errorMessage(err), variant: 'destructive' })
+    }
+  }
+
+  const handleFork = async () => {
+    if (!activeId || !workflowId || isNew) return
+    try {
+      const forked = await forkWorkflow.mutateAsync({
+        workflowId,
+        targetWorkspaceId: activeId,
+        newName: `${name} (copy)`,
+      })
+      toast({ title: 'Workflow remixed', description: forked.name })
+      navigate(`/app/w/${activeId}/workflows/${forked.id}`)
+    } catch (err) {
+      toast({ title: 'Remix failed', description: errorMessage(err), variant: 'destructive' })
+    }
+  }
+
+  const busy =
+    createWorkflow.isPending ||
+    updateWorkflow.isPending ||
+    createVersion.isPending ||
+    runWorkflow.isPending
+
   if (isLoading && !isNew) return <BuilderSkeleton />
 
+  const savedVersion = latestVersion(existing?.versions)
+
   return (
-    <div className="flex h-[calc(100vh-0px)] flex-col">
+    <div className="flex h-screen flex-col">
       <header className="border-b px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to={`/app/w/${activeId}/workflows`}>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Back to workflows">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <div>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="h-8 border-none text-lg font-semibold px-0 focus-visible:ring-0"
-            />
-          </div>
-          {isPublic && <Badge variant="outline">Public</Badge>}
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            aria-label="Workflow name"
+            className="h-8 w-64 border-none text-lg font-semibold px-0 focus-visible:ring-0"
+          />
+          {savedVersion && <Badge variant="outline">v{savedVersion.version_number}</Badge>}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Share2 className="h-4 w-4 mr-2" />Share
-          </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleFork} disabled={isNew || busy}>
             <GitFork className="h-4 w-4 mr-2" />Remix
           </Button>
           <Link to={workflowId && !isNew ? `/app/w/${activeId}/workflows/${workflowId}/runs` : '#'}>
@@ -162,10 +292,10 @@ function Builder() {
               <History className="h-4 w-4 mr-2" />Runs
             </Button>
           </Link>
-          <Button size="sm" onClick={handleSave} disabled={updateWorkflow.isPending || createWorkflow.isPending}>
+          <Button variant="outline" size="sm" onClick={handleSave} disabled={busy}>
             <Save className="h-4 w-4 mr-2" />Save
           </Button>
-          <Button size="sm" disabled={isNew}>
+          <Button size="sm" onClick={handleRun} disabled={busy}>
             <Play className="h-4 w-4 mr-2" />Run
           </Button>
         </div>
@@ -179,7 +309,8 @@ function Builder() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            nodeTypes={nodeTypes}
+            onNodeClick={(_, node) => setSelectedId(node.id)}
+            onPaneClick={() => setSelectedId(null)}
             fitView
           >
             <Background />
@@ -189,44 +320,135 @@ function Builder() {
         </div>
 
         <aside className="w-80 border-l bg-card p-4 overflow-auto">
-          <h2 className="font-semibold mb-4">Workflow settings</h2>
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="visibility">Visibility</Label>
-              <Select value={isPublic ? 'public' : 'private'} onValueChange={(v) => setIsPublic(v === 'public')}>
-                <SelectTrigger id="visibility">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="private">Private to workspace</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Separator className="my-6" />
-
-          <h2 className="font-semibold mb-4">Add node</h2>
+          <h2 className="font-semibold mb-3">Add node</h2>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => addNode('prompt')}>Prompt</Button>
-            <Button variant="outline" onClick={() => addNode('decision')}>Decision</Button>
-            <Button variant="outline" onClick={() => addNode('output')}>Output</Button>
+            <Button variant="outline" size="sm" onClick={() => addNode('start')}>Start</Button>
+            <Button variant="outline" size="sm" onClick={() => addNode('prompt')}>Prompt</Button>
+            <Button variant="outline" size="sm" onClick={() => addNode('decision')}>Decision</Button>
+            <Button variant="outline" size="sm" onClick={() => addNode('output')}>Output</Button>
           </div>
+
+          <Separator className="my-4" />
+
+          {selected ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold">Node</h2>
+                <Button variant="ghost" size="icon" onClick={deleteSelected} aria-label="Delete node">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="node-label">Label</Label>
+                <Input
+                  id="node-label"
+                  value={selected.data.label}
+                  onChange={(e) => updateSelected({ label: e.target.value })}
+                />
+              </div>
+
+              {selected.data.nodeType === 'prompt' ? (
+                <>
+                  <div className="space-y-1">
+                    <Label htmlFor="node-model">Model</Label>
+                    <Select
+                      value={selected.data.config.model || DEFAULT_MODEL}
+                      onValueChange={(v) => updateSelectedConfig({ model: v })}
+                    >
+                      <SelectTrigger id="node-model">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FREE_MODELS.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="node-prompt">Prompt</Label>
+                    <Textarea
+                      id="node-prompt"
+                      rows={6}
+                      placeholder="Summarise this: {start_node_id}"
+                      value={selected.data.config.prompt || ''}
+                      onChange={(e) => updateSelectedConfig({ prompt: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Reference an upstream prompt node's output with{' '}
+                      <code>{`{${toStepKey(
+                        nodes.find((n) => n.id !== selected.id && n.data.nodeType === 'prompt')?.id ||
+                          'step_id'
+                      )}}`}</code>
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Only Prompt nodes call a model. This node just shapes the flow.
+                </p>
+              )}
+            </div>
+          ) : (
+            <>
+              <h2 className="font-semibold mb-3">Workflow</h2>
+              <div className="space-y-1">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Select a node on the canvas to edit its prompt and model.
+              </p>
+            </>
+          )}
+
+          {run && (
+            <>
+              <Separator className="my-4" />
+              <h2 className="font-semibold mb-2">
+                Run <Badge variant="outline">{run.status}</Badge>
+              </h2>
+              <div className="space-y-2">
+                {run.steps.map((s) => (
+                  <div key={s.step_key} className="rounded border p-2">
+                    <div className="flex items-center justify-between text-sm font-medium">
+                      <span className="truncate">{s.step_key}</span>
+                      <span className="text-muted-foreground">{s.status}</span>
+                    </div>
+                    {s.outputs?.text && (
+                      <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">
+                        {s.outputs.text}
+                      </p>
+                    )}
+                    {s.error_message && (
+                      <p className="mt-1 text-xs text-destructive">{s.error_message}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </aside>
       </div>
     </div>
   )
+}
+
+function errorMessage(err: unknown): string {
+  if (err instanceof GraphValidationError) return err.errors.join(' ')
+  if (typeof err === 'object' && err && 'response' in err) {
+    const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
+    if (typeof detail === 'string') return detail
+    if (Array.isArray(detail)) return detail.map((d) => JSON.stringify(d)).join(', ')
+  }
+  return err instanceof Error ? err.message : 'Unknown error'
 }
 
 function BuilderSkeleton() {

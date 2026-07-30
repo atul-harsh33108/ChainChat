@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import { useOrganization } from '@clerk/clerk-react'
+import { Link, useParams } from 'react-router-dom'
+import { useOrganization, useUser } from '@clerk/clerk-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -8,23 +8,29 @@ import { Workflow, Users, CreditCard, ArrowRight } from 'lucide-react'
 
 export function DashboardPage() {
   const { organization, isLoaded } = useOrganization()
+  const { user } = useUser()
+  const { workspaceId } = useParams()
 
   if (!isLoaded) {
     return <DashboardSkeleton />
   }
 
+  // Organizations can be disabled on the Clerk instance; fall back to the
+  // route param and finally the user's own id (personal workspace).
+  const activeId = workspaceId || organization?.id || user?.id
+
   return (
     <div className="p-8 max-w-5xl">
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{organization?.name || 'Workspace'}</h1>
+          <h1 className="text-3xl font-bold">{organization?.name || 'My workspace'}</h1>
           <p className="text-muted-foreground">Manage your team's AI workflows.</p>
         </div>
         <Badge variant="secondary">Pro trial</Badge>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4 mb-8">
-        <Link to={`/app/w/${organization?.id}/workflows`}>
+        <Link to={`/app/w/${activeId}/workflows`}>
           <Card className="hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
               <Workflow className="h-5 w-5 mb-2" />
@@ -39,7 +45,7 @@ export function DashboardPage() {
           </Card>
         </Link>
 
-        <Link to={`/app/w/${organization?.id}/settings`}>
+        <Link to={`/app/w/${activeId}/settings`}>
           <Card className="hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
               <Users className="h-5 w-5 mb-2" />
@@ -54,7 +60,7 @@ export function DashboardPage() {
           </Card>
         </Link>
 
-        <Link to={`/app/w/${organization?.id}/settings`}>
+        <Link to={`/app/w/${activeId}/settings`}>
           <Card className="hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
               <CreditCard className="h-5 w-5 mb-2" />
@@ -72,14 +78,14 @@ export function DashboardPage() {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Recent workflows</h2>
-        <Link to={`/app/w/${organization?.id}/workflows/new`}>
+        <Link to={`/app/w/${activeId}/workflows/new`}>
           <Button>Create workflow</Button>
         </Link>
       </div>
       <Card className="mt-4">
         <CardContent className="py-12 text-center">
           <CardDescription>No workflows yet. Create your first AI prompt chain.</CardDescription>
-          <Link to={`/app/w/${organization?.id}/workflows/new`}>
+          <Link to={`/app/w/${activeId}/workflows/new`}>
             <Button className="mt-4">Create workflow</Button>
           </Link>
         </CardContent>

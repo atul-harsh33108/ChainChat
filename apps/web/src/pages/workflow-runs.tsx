@@ -1,16 +1,18 @@
 import { useParams, Link } from 'react-router-dom'
-import { useOrganization } from '@clerk/clerk-react'
+import { useOrganization, useUser } from '@clerk/clerk-react'
 import { useWorkflow, useExecutions } from '@/hooks/workflows'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import type { ExecutionStatus } from '@/types'
 
 export function WorkflowRunsPage() {
   const { workspaceId, workflowId } = useParams()
   const { organization } = useOrganization()
-  const activeId = workspaceId || organization?.id
+  const { user } = useUser()
+  const activeId = workspaceId || organization?.id || user?.id
   const { data: workflow, isLoading: wfLoading } = useWorkflow(workflowId)
   const { data: executions, isLoading: runsLoading } = useExecutions(workflowId)
 
@@ -20,7 +22,7 @@ export function WorkflowRunsPage() {
     <div className="p-8 max-w-5xl">
       <div className="flex items-center gap-3 mb-6">
         <Link to={`/app/w/${activeId}/workflows/${workflowId}`}>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Back to builder">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -42,14 +44,33 @@ export function WorkflowRunsPage() {
                 <CardDescription className="flex items-center gap-4">
                   <span className="flex items-center">
                     <Clock className="h-3 w-3 mr-1" />
-                    {run.startedAt ? new Date(run.startedAt).toLocaleString() : 'Pending'}
+                    {new Date(run.created_at).toLocaleString()}
                   </span>
-                  {run.latencyMs && <span>{run.latencyMs}ms</span>}
-                  {run.costEstimateUsd && <span>${run.costEstimateUsd.toFixed(4)}</span>}
+                  <span>{run.steps.length} steps</span>
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{run.steps.length} steps · Output keys: {Object.keys(run.outputContext).join(', ') || 'none'}</p>
+              <CardContent className="space-y-2">
+                {run.error_message && (
+                  <p className="text-sm text-destructive">{run.error_message}</p>
+                )}
+                {run.steps.map((step) => (
+                  <div key={step.id} className="rounded border p-2">
+                    <div className="flex items-center justify-between text-sm font-medium">
+                      <span className="truncate">{step.step_key}</span>
+                      <span className="text-muted-foreground">
+                        {step.status}
+                        {step.retry_count > 0 && ` · ${step.retry_count} retries`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{step.model_key}</p>
+                    {step.outputs?.text && (
+                      <p className="mt-1 text-sm whitespace-pre-wrap">{step.outputs.text}</p>
+                    )}
+                    {step.error_message && (
+                      <p className="mt-1 text-xs text-destructive">{step.error_message}</p>
+                    )}
+                  </div>
+                ))}
               </CardContent>
             </Card>
           ))}
@@ -57,7 +78,9 @@ export function WorkflowRunsPage() {
       ) : (
         <Card>
           <CardContent className="py-16 text-center">
-            <CardDescription>No runs yet. Run the workflow from the builder to see results here.</CardDescription>
+            <CardDescription>
+              No runs yet. Press Run in the builder to execute this workflow.
+            </CardDescription>
           </CardContent>
         </Card>
       )}
@@ -65,12 +88,30 @@ export function WorkflowRunsPage() {
   )
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const icon =
-    status === 'success' ? <CheckCircle2 className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />
+function StatusBadge({ status }: { status: ExecutionStatus }) {
+  if (status === 'completed') {
+    return (
+      <Badge>
+        <CheckCircle2 className="h-3 w-3 mr-1" />
+        completed
+      </Badge>
+    )
+  }
+  if (status === 'failed') {
+    return (
+      <Badge variant="destructive">
+        <XCircle className="h-3 w-3 mr-1" />
+        failed
+      </Badge>
+    )
+  }
   return (
-    <Badge variant={status === 'success' ? 'default' : status === 'failed' ? 'destructive' : 'secondary'}>
-      {icon}
+    <Badge variant="secondary">
+      {status === 'running' || status === 'pending' ? (
+        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+      ) : (
+        <XCircle className="h-3 w-3 mr-1" />
+      )}
       {status}
     </Badge>
   )

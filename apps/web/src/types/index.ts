@@ -6,6 +6,7 @@ export interface User {
   avatarUrl: string | null
 }
 
+/** UI-only view of the active workspace (sourced from Clerk, not the API). */
 export interface Workspace {
   id: string
   name: string
@@ -22,77 +23,126 @@ export interface Membership {
   user?: User
 }
 
-export interface WorkflowVariable {
-  name: string
-  type: 'string' | 'number' | 'boolean'
-  default?: string
-  required: boolean
+export type NodeType = 'start' | 'prompt' | 'decision' | 'output'
+
+export interface NodeConfig {
+  /** OpenRouter model id, e.g. "google/gemma-4-31b-it:free". */
+  model?: string
+  prompt?: string
+  temperature?: number
 }
 
-export interface WorkflowNode {
+export interface GraphNode {
   id: string
-  type: 'start' | 'prompt' | 'decision' | 'output'
-  position: { x: number; y: number }
+  type: NodeType
   label?: string
-  config?: Record<string, unknown>
+  position: { x: number; y: number }
+  config?: NodeConfig
 }
 
-export interface WorkflowEdge {
+export interface GraphEdge {
   id: string
   source: string
   target: string
   label?: string
-  condition?: string
+}
+
+/** Stored verbatim in WorkflowVersion.graph (JSONB) on the backend. */
+export interface WorkflowGraph {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+}
+
+export interface WorkflowVersion {
+  id: string
+  workflow_id: string
+  version_number: number
+  name: string | null
+  description: string | null
+  change_summary: string | null
+  status: string
+  graph: WorkflowGraph | null
+  metadata: Record<string, unknown> | null
+  created_by: string
+  created_at: string
+  updated_at: string
 }
 
 export interface Workflow {
   id: string
-  workspaceId: string
-  createdBy: string
+  workspace_id: string
+  owner_id: string
   name: string
   description: string | null
-  isPublic: boolean
-  sourceWorkflowId: string | null
-  variables: WorkflowVariable[]
-  nodes: WorkflowNode[]
-  edges: WorkflowEdge[]
-  version: number
-  createdAt: string
-  updatedAt: string
+  metadata: Record<string, unknown> | null
+  is_template: boolean
+  parent_id: string | null
+  root_version_id: string | null
+  published_version_id: string | null
+  created_at: string
+  updated_at: string
+  versions: WorkflowVersion[]
 }
+
+export type StepStatus = 'pending' | 'running' | 'completed' | 'failed'
+export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 export interface ExecutionStep {
   id: string
-  nodeId: string
-  nodeType: string
-  status: 'pending' | 'running' | 'success' | 'failed' | 'skipped'
-  inputSnapshot: Record<string, unknown>
-  outputSnapshot: Record<string, unknown>
-  errorMessage: string | null
-  latencyMs: number
-  costEstimateUsd: number | null
+  execution_id: string
+  step_key: string
+  depends_on: string[]
+  provider: string
+  model_key: string
+  prompt: string | null
+  inputs: Record<string, unknown> | null
+  outputs: { text?: string } | null
+  status: StepStatus
+  retry_count: number
+  error_message: string | null
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
 }
 
 export interface Execution {
   id: string
-  workflowId: string
-  workspaceId: string
-  triggeredBy: string
-  status: 'pending' | 'running' | 'success' | 'failed' | 'cancelled'
-  inputContext: Record<string, unknown>
-  outputContext: Record<string, unknown>
-  startedAt: string | null
-  finishedAt: string | null
-  costEstimateUsd: number | null
-  latencyMs: number | null
+  workspace_id: string
+  /** The workflow this run belongs to. */
+  chain_id: string
+  status: ExecutionStatus
+  input_payload: Record<string, unknown> | null
+  output_payload: Record<string, unknown> | null
+  error_message: string | null
+  created_at: string
+  updated_at: string
   steps: ExecutionStep[]
+}
+
+/** Lightweight payload pushed by the /executions/{id}/stream SSE endpoint. */
+export interface ExecutionStreamEvent {
+  id: string
+  status: ExecutionStatus
+  steps: {
+    step_key: string
+    status: StepStatus
+    retry_count: number
+    outputs: { text?: string } | null
+    error_message: string | null
+  }[]
 }
 
 export interface Template {
   id: string
+  source_workflow_id: string | null
   name: string
   description: string | null
-  category: string
-  workflowSnapshot: Omit<Workflow, 'id' | 'workspaceId' | 'createdBy' | 'version' | 'createdAt' | 'updatedAt'>
-  isOfficial: boolean
+  category: string | null
+  tags: string[] | null
+  graph: WorkflowGraph | null
+  metadata: Record<string, unknown> | null
+  is_public: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
 }

@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+// BrowserRouter lives in main.tsx so ClerkProvider can render inside it.
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut } from '@clerk/clerk-react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { LandingPage } from '@/pages/landing'
@@ -36,11 +37,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<SignInPage />} />
-            <Route path="/sign-up" element={<SignUpPage />} />
+            {/* Splat routes are required: Clerk's path routing navigates to
+                sub-paths such as /sign-up/verify-email-address (OTP step) and
+                /login/factor-one. Exact paths leave those URLs unmatched, which
+                renders a blank page. */}
+            <Route path="/login/*" element={<SignInPage />} />
+            <Route path="/sign-up/*" element={<SignUpPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
             <Route
               path="/app"
@@ -58,8 +62,9 @@ function App() {
               <Route path="w/:workspaceId/workflows/:workflowId/runs" element={<WorkflowRunsPage />} />
               <Route path="w/:workspaceId/settings" element={<SettingsPage />} />
             </Route>
+            {/* Fallback so an unmatched URL never renders an empty page. */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </BrowserRouter>
         <Toaster />
     </QueryClientProvider>
   )
