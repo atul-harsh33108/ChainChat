@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -242,13 +242,15 @@ async def create_workflow_version(
     if not workflow:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
 
-    latest_result = await db.execute(
-        select(WorkflowVersion)
-        .where(WorkflowVersion.workflow_id == workflow_id)
-        .order_by(WorkflowVersion.version_number.desc())
+    # Only the highest version number is needed. scalar_one_or_none() would
+    # raise MultipleResultsFound as soon as a workflow has more than one
+    # version, so take the first row of an explicitly limited query.
+    latest_version_number = await db.scalar(
+        select(func.max(WorkflowVersion.version_number)).where(
+            WorkflowVersion.workflow_id == workflow_id
+        )
     )
-    latest = latest_result.scalar_one_or_none()
-    next_version = (latest.version_number + 1) if latest else 1
+    next_version = (latest_version_number or 0) + 1
 
     version = WorkflowVersion(
         id=uuid4(),

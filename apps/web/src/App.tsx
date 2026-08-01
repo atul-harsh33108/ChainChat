@@ -11,6 +11,7 @@ import { WorkflowBuilderPage } from '@/pages/workflow-builder'
 import { WorkflowRunsPage } from '@/pages/workflow-runs'
 import { SettingsPage } from '@/pages/settings'
 import { TemplatesPage } from '@/pages/templates'
+import { AdminPage } from '@/pages/admin'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Toaster } from '@/components/ui/toaster'
 
@@ -61,6 +62,7 @@ function App() {
               <Route path="w/:workspaceId/workflows/:workflowId" element={<WorkflowBuilderPage />} />
               <Route path="w/:workspaceId/workflows/:workflowId/runs" element={<WorkflowRunsPage />} />
               <Route path="w/:workspaceId/settings" element={<SettingsPage />} />
+              <Route path="admin" element={<AdminPage />} />
             </Route>
             {/* Fallback so an unmatched URL never renders an empty page. */}
             <Route path="*" element={<Navigate to="/" replace />} />

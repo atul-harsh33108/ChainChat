@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.auth_service.config import settings
-from src.auth_service.routers import health, users, workspaces, webhooks
+from src.auth_service.routers import admin, health, users, workspaces, webhooks
 
 logger = structlog.get_logger()
 
@@ -32,6 +32,7 @@ app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(workspaces.router, prefix="/api/v1/workspaces", tags=["workspaces"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 
 
 @app.exception_handler(Exception)

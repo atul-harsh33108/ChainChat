@@ -26,15 +26,21 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     clerk_secret_key: str = ""
     clerk_webhook_secret: str = ""
+    clerk_api_url: str = "https://api.clerk.com/v1"
+
+    # Comma-separated list of email addresses allowed to use the admin console.
+    # Kept in configuration (not the database) so there is no bootstrap problem
+    # and so admin rights cannot be granted by editing application data.
+    admin_emails: str = ""
 
     @field_validator("database_url")
     @classmethod
     def _clean_database_url(cls, value: str) -> str:
         return strip_libpq_options(value)
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    @property
+    def admin_email_set(self) -> set[str]:
+        return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
 
 
 settings = Settings()

@@ -88,6 +88,48 @@ def _render_prompt(template: str, variables: dict[str, Any]) -> str:
     return _PLACEHOLDER.sub(replace, template)
 
 
+def _friendly_error(exc: Exception) -> str:
+    """Turn provider HTTP errors into something a user can act on."""
+    response = getattr(exc, "response", None)
+    status = getattr(response, "status_code", None)
+
+    if status == 429:
+        return (
+            "Rate limited by OpenRouter (429). Free models allow only a few "
+            "requests per minute - wait a moment and run again."
+        )
+    if status in (401, 403):
+        return f"Provider rejected the API key ({status}). Check OPENAI_API_KEY."
+    if status == 404:
+        return "Model not found (404). The model id may no longer exist on OpenRouter."
+    if status is not None:
+        detail = ""
+        try:
+            payload = response.json()
+            detail = payload.get("error", {}).get("message") or ""
+        except Exception:
+            detail = ""
+        return f"Provider error {status}. {detail}".strip()
+    return str(exc)
+
+
+def _retry_delay(exc: Exception, attempt: int) -> float:
+    """Back off longer for rate limits, honouring Retry-After when present."""
+    response = getattr(exc, "response", None)
+    status = getattr(response, "status_code", None)
+
+    if status == 429:
+        retry_after = (getattr(response, "headers", {}) or {}).get("retry-after")
+        if retry_after:
+            try:
+                return min(float(retry_after), 30.0)
+            except (TypeError, ValueError):
+                pass
+        # Exponential: 5s, 10s, 20s...
+        return min(5.0 * (2**attempt), 30.0)
+    return 1.0 * (attempt + 1)
+
+
 async def _run_step_with_retries(
     session: AsyncSession,
     execution: Execution,
@@ -118,17 +160,18 @@ async def _run_step_with_retries(
             await _mark_step_status(session, step, "completed", outputs=outputs)
             return outputs
         except Exception as exc:
+            message = _friendly_error(exc)
             logger.warning(
                 "step_failed",
                 execution_id=str(execution.id),
                 step_key=step.step_key,
                 attempt=attempt,
-                error=str(exc),
+                error=message,
             )
             if attempt >= max_retries:
-                await _mark_step_status(session, step, "failed", error=str(exc))
-                raise
-            await asyncio.sleep(1 * (attempt + 1))
+                await _mark_step_status(session, step, "failed", error=message)
+                raise RuntimeError(message) from exc
+            await asyncio.sleep(_retry_delay(exc, attempt))
 
     return {}
 

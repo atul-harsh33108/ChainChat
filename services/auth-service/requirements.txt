@@ -10,3 +10,5 @@ alembic==1.13.3
 structlog==24.4.0
 redis==5.1.1
 python-jose[cryptography]==3.3.0
+# Used to call the Clerk Backend API (user directory for the admin console).
+httpx==0.27.2

@@ -11,7 +11,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { LayoutDashboard, FileText, Settings, ChevronDown } from 'lucide-react'
+import { useMe } from '@/hooks/admin'
+import { Badge } from '@/components/ui/badge'
+import { LayoutDashboard, FileText, Settings, ChevronDown, ShieldCheck, Crown } from 'lucide-react'
 
 export function AppLayout() {
   const { user } = useUser()
@@ -22,6 +24,7 @@ export function AppLayout() {
   const { workspaceId } = useParams()
   const { currentWorkspaceId, setCurrentWorkspace } = useWorkspaceStore()
   const location = useLocation()
+  const { data: me } = useMe()
 
   useEffect(() => {
     if (organization) {
@@ -88,6 +91,14 @@ export function AppLayout() {
             label="Settings"
             active={location.pathname === `/app/w/${activeId}/settings`}
           />
+          {me?.is_admin && (
+            <NavItem
+              to="/app/admin"
+              icon={<ShieldCheck className="h-4 w-4" />}
+              label="Admin"
+              active={location.pathname === '/app/admin'}
+            />
+          )}
         </nav>
         <Separator />
         <div className="p-4">
@@ -101,6 +112,11 @@ export function AppLayout() {
                 {user?.emailAddresses[0]?.emailAddress}
               </p>
             </div>
+            {me?.plan === 'pro' && (
+              <Badge className="shrink-0">
+                <Crown className="h-3 w-3 mr-1" />Pro
+              </Badge>
+            )}
           </div>
         </div>
       </aside>

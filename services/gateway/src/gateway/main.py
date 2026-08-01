@@ -16,6 +16,7 @@ SERVICE_MAP = {
     "auth": settings.auth_service_url,
     "workspaces": settings.auth_service_url,
     "users": settings.auth_service_url,
+    "admin": settings.auth_service_url,
     "workflows": settings.workflow_service_url,
     "templates": settings.workflow_service_url,
     "executions": settings.execution_service_url,

@@ -23,6 +23,44 @@ export interface Membership {
   user?: User
 }
 
+/** Response of GET /api/v1/users/me. */
+export interface Me {
+  id: string
+  clerk_id: string
+  email: string
+  name: string | null
+  avatar_url: string | null
+  created_at: string
+  is_admin: boolean
+  plan: 'free' | 'pro'
+  pro_expires_at: string | null
+}
+
+/** A Clerk user merged with local entitlement state (admin console). */
+export interface AdminUser {
+  clerk_id: string
+  email: string | null
+  name: string | null
+  avatar_url: string | null
+  created_at: string | null
+  last_sign_in_at: string | null
+  is_admin: boolean
+  plan: 'free' | 'pro'
+  pro_expires_at: string | null
+}
+
+export interface ProGrant {
+  id: string
+  clerk_id: string
+  granted_by: string
+  reason: string | null
+  starts_at: string
+  expires_at: string
+  revoked_at: string | null
+  revoked_by: string | null
+  created_at: string
+}
+
 export type NodeType = 'start' | 'prompt' | 'decision' | 'output'
 
 export interface NodeConfig {

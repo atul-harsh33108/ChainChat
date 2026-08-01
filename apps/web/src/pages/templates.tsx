@@ -71,8 +71,8 @@ export function TemplatesPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <Badge variant="secondary">{t.category}</Badge>
-                    {t.isOfficial && <Badge>Official</Badge>}
+                    {t.category && <Badge variant="secondary">{t.category}</Badge>}
+                    {t.is_public && <Badge>Public</Badge>}
                   </div>
                   <Button className="w-full mt-4" onClick={() => handleUse(t.id)}>Use template</Button>
                 </CardContent>

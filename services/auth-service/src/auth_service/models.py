@@ -51,6 +51,32 @@ class Membership(Base):
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
+class ProGrant(Base):
+    """A time-boxed Pro entitlement granted to a user by a system admin.
+
+    Grants are append-only: revoking sets ``revoked_at`` rather than deleting,
+    so the history stays auditable. A user is Pro when any grant is currently
+    active (started, not expired, not revoked).
+    """
+
+    __tablename__ = "pro_grants"
+    __table_args__ = {"schema": "auth"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True, index=True)
+    # Denormalised so a grant can be created before the user has ever signed in.
+    clerk_id = Column(String, nullable=False, index=True)
+    granted_by = Column(String, nullable=False)
+    reason = Column(Text, nullable=True)
+    starts_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    revoked_by = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+
+    user = relationship("User")
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     __table_args__ = {"schema": "auth"}
