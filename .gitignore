@@ -56,3 +56,7 @@ docker-volumes/
 
 # Sentry
 .sentryclirc
+
+#my py cache
+.mypy_cache/
+.mypy_cache
