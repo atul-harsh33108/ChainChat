@@ -1,4 +1,4 @@
-.PHONY: venv install dev test lint migrate format clean
+.PHONY: venv install dev test lint migrate seed format clean
 
 SERVICES := gateway auth-service workflow-service execution-service billing-service notification-service
 
@@ -30,6 +30,10 @@ lint:
 		cd services/$$svc && .venv/bin/ruff check . && .venv/bin/mypy . && cd ../..; \
 	done
 	cd apps/web && npm run lint
+
+seed:
+	@echo "Seeding template gallery..."
+	cd services/workflow-service && .venv/bin/python scripts/seed_templates.py
 
 migrate:
 	@for svc in auth-service workflow-service execution-service billing-service notification-service; do \

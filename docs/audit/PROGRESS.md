@@ -20,7 +20,7 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 | BUG-02 | ESLint errors (5) + warnings (3) | P0 | ✅ 🧪 | `npm run lint` in CI | 2026-08-06 | builder hydration effect → prop-init + `key` remount; admin `Date.now()` → query `dataUpdatedAt`; api.ts dead assignment removed; empty interfaces → type aliases; cva variants unexported; `ClerkProviderWithRouter` extracted |
 | BUG-03 | Prettier drift (31 files) | P0 | ✅ 🧪 | `format:check` in CI | 2026-08-06 | `npm run format` applied; check now passes |
 | BUG-04 | mypy fails under CI invocation | P0 | ✅ 🧪 | `mypy .` per service in CI | 2026-08-06 | `src/__init__.py` + per-service `mypy.ini`; ci.yml runs from service dir; 3 real bugs mypy then surfaced also fixed (see Session 2) |
-| BUG-05 | "Use template" dead end | P2 | ⬜ | — | — | |
+| BUG-05 | "Use template" dead end | P2 | ✅ 🧪 | `workflow-service/tests/test_templates.py` (3 tests) | 2026-08-06 | builder `ApplyTemplate` reads `?template=`, calls apply, navigates to created workflow |
 | BUG-06 | Billing: dead UI buttons + portal placeholder | P3+P6 | ⬜ | — | — | split FE/BE |
 | BUG-07 | Dashboard hardcoded | P3 | ⬜ | — | — | |
 | BUG-08 | Members tab `alert()` | P3 | ⬜ | — | — | |
@@ -49,7 +49,7 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 | FEAT-03 | Gateway rate limiting | P9 | ⬜ | — | — | |
 | FEAT-04 | Fail-closed JWT verification | P9 | ⬜ | — | — | |
 | FEAT-05 | Email sending | P7 | ⬜ | — | — | |
-| FEAT-06 | Template seed data | P2 | ⬜ | — | — | |
+| FEAT-06 | Template seed data | P2 | ✅ 🧪 | seed script compiles + ruff; idempotent by unique name | 2026-08-06 | `scripts/seed_templates.py` + `make seed`; 3 starter templates |
 | FEAT-07 | Test coverage (engine ≥70%, e2e) | P9 | ⬜ | — | — | |
 | FEAT-08 | Observability (Sentry, metrics) | P9 | ⬜ | — | — | |
 
@@ -63,10 +63,26 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 | `apps/web`: `npm run format:check` | 2026-08-06 | ✅ clean | — |
 | services: `pytest` (gateway, auth-service) | 2026-08-06 | ✅ 8 passing (gateway 7 incl. new proxy suite, auth 1)* | *requires BUG-09 workaround |
 | services: `ruff check src` (all 6) | 2026-08-06 | ✅ clean | — |
-| services: `mypy .` (per service dir) | 2026-08-06 | ✅ clean — all 6 services | — |
-| services: `pytest` (workflow/execution/billing/notification) | never | — | no local venvs yet; `make venv && make install` first |
+| services: `mypy .` (per service dir) | 2026-08-06 | ✅ clean — all 6 services (workflow-service now with full local venv: 18 files) | — |
+| services: `pytest` (workflow) | 2026-08-06 | ✅ 4 passing (incl. new template suite)* | *requires BUG-09 workaround |
 
 ## 3. Session log (newest first)
+
+### Session 4 — 2026-08-06 · branch `test-v2-30-7` · P2 (templates end-to-end)
+- **Did:** fixed BUG-05 + FEAT-06. Frontend: new `useApplyTemplate` hook; builder page
+  reads `?template=` and mounts an `ApplyTemplate` component that calls
+  `POST /templates/{id}/apply` once (ref-guarded against StrictMode double-effects),
+  then navigates to the created workflow. Backend: `scripts/seed_templates.py` with 3
+  idempotent starter templates (Blog post pipeline, Code review chain, Meeting notes to
+  action items) using the free default model; `make seed` target. Tests: 3 new
+  apply-endpoint tests (creates workflow+version with graph, 404, 401) using a fake
+  DB session via dependency_overrides. Created the workflow-service local venv to run
+  them.
+- **Evidence:** workflow pytest 4/4 ✅ · mypy clean (18 files, full deps) ✅ · ruff
+  clean ✅ · frontend tsc/eslint/prettier/vitest all green ✅.
+- **Gotcha hit:** batching two same-file edits in one tool call can clobber (commands
+  may interleave) — edits to the same file now go one call at a time.
+- **Next:** P3 — frontend honesty pass (BUG-06 FE, BUG-07, BUG-08).
 
 ### Session 3 — 2026-08-06 · branch `test-v2-30-7` · P1 (webhook routing)
 - **Did:** fixed BUG-01 — added `"webhooks"` to the gateway `SERVICE_MAP` (routes to
@@ -133,7 +149,7 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 ## 5. Session memory — environment & conventions
 
 - **Machine:** Windows + PowerShell. Per-service venvs at `services/<svc>/.venv`; invoke
-  tools as `.venv\Scripts\<tool>.exe`. Only auth-service + gateway venvs exist locally;
+  tools as `.venv\Scripts\<tool>.exe`. Only auth-service + gateway + workflow-service venvs exist locally;
   create others with `make venv && make install` (or per-service equivalents) as needed.
 - **⚠️ BUG-09 workaround:** this machine globally exports `DATABASE_URL` and `REDIS_URL`
   belonging to another project. Run `$env:DATABASE_URL=$null; $env:REDIS_URL=$null` in

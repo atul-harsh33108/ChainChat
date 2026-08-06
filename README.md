@@ -95,6 +95,7 @@ make dev           # start docker-compose local stack
 make test          # run all tests
 make lint          # run linters (ruff, mypy, eslint)
 make migrate       # run Alembic migrations
+make seed          # seed the template gallery with starter templates
 make format        # auto-format code
 ```
 

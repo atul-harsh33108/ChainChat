@@ -324,9 +324,10 @@ Tailwind + shadcn/ui, React Flow, and Clerk for auth.
   outputs, retry counts, and status badges.
 - **settings** — General (Clerk org info + create org), Members (invite button is an
   `alert()` — BUG-08), Billing (buttons have no handlers — BUG-06).
-- **templates** — real gallery via `useTemplates`, but "Use template" navigates to
-  `/workflows/new?template=<id>` and **nothing consumes the param** (BUG-05); also no
-  seed data, so the gallery is empty on a fresh install (FEAT-06).
+- **templates** — real gallery via `useTemplates`; "Use template" navigates to
+  `/workflows/new?template=<id>`, where the builder applies it via
+  `POST /templates/{id}/apply` and opens the created workflow (fixed 2026-08-06, P2).
+  Starter templates are seeded with `make seed` (FEAT-06 done).
 - **admin** — full admin console UI (search Clerk users, grant/extend/revoke Pro with
   durations and reasons, grant history), hidden unless `useMe().is_admin`; server-side
   authorization is authoritative.
@@ -355,8 +356,9 @@ JIT-synced row). Current seams (audit IDs in brackets — see `docs/audit/AUDIT.
    `webhooks` path segment; both webhook routes proxy without a token (covered by
    `services/gateway/tests/test_proxy.py`). The webhook *handlers* are still no-ops —
    see GAP-01/GAP-04.
-2. **"Use template" dead end [BUG-05].** The `?template=` param is never read; the
-   working `POST /templates/{id}/apply` endpoint is never called.
+2. ~~**"Use template" dead end [BUG-05]**~~ — **FIXED 2026-08-06 (P2):** the builder
+   reads `?template=`, calls `POST /templates/{id}/apply`, and navigates to the created
+   workflow. Seed data ships via `make seed` (FEAT-06).
 3. **Frontend placeholders [BUG-06, BUG-07, BUG-08].** Dead billing buttons, hardcoded
    dashboard, `alert()` member invites.
 4. **No plan enforcement [GAP-05].** Pro entitlements are computed and displayed but

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import ReactFlow, {
   Background,
   Controls,
@@ -22,6 +22,7 @@ import {
   useRunWorkflow,
   useForkWorkflow,
   useExecution,
+  useApplyTemplate,
   GraphValidationError,
 } from '@/hooks/workflows'
 import { Button } from '@/components/ui/button'
@@ -477,10 +478,58 @@ function BuilderSkeleton() {
   )
 }
 
+/**
+ * Applies a gallery template once, then hands off to the real builder route.
+ *
+ * The template id arrives as ?template=<id> from the gallery page. The backend
+ * creates the workflow + initial version from the template's stored graph, and
+ * this URL is replaced with the new workflow's builder route.
+ */
+function ApplyTemplate({ templateId }: { templateId: string }) {
+  const { workspaceId } = useParams()
+  const { organization } = useOrganization()
+  const { user } = useUser()
+  const navigate = useNavigate()
+  const applyTemplate = useApplyTemplate()
+  // Guard against effect re-fires (StrictMode double-invokes effects in dev).
+  const startedRef = useRef(false)
+
+  const activeId = workspaceId || organization?.id || user?.id
+  const ownerId = user?.id
+
+  useEffect(() => {
+    if (!activeId || !ownerId || startedRef.current) return
+    startedRef.current = true
+    applyTemplate
+      .mutateAsync({ templateId, workspaceId: activeId, ownerId })
+      .then((applied) => {
+        toast({ title: 'Template applied', description: applied.name })
+        navigate(`/app/w/${activeId}/workflows/${applied.workflow_id}`, { replace: true })
+      })
+      .catch((err) => {
+        toast({
+          title: 'Could not apply template',
+          description: errorMessage(err),
+          variant: 'destructive',
+        })
+        navigate(`/app/w/${activeId}/workflows/new`, { replace: true })
+      })
+  }, [activeId, ownerId, templateId, applyTemplate, navigate])
+
+  return <BuilderSkeleton />
+}
+
 export function WorkflowBuilderPage() {
   const { workflowId } = useParams()
+  const [searchParams] = useSearchParams()
+  const templateId = searchParams.get('template')
   const isNew = workflowId === 'new'
   const { data: existing, isLoading } = useWorkflow(isNew ? undefined : workflowId)
+
+  // 'Use template' in the gallery lands here with ?template=<id>.
+  if (isNew && templateId) {
+    return <ApplyTemplate templateId={templateId} />
+  }
 
   return (
     <ReactFlowProvider>

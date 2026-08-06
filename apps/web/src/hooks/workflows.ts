@@ -121,6 +121,32 @@ export function useForkWorkflow() {
   })
 }
 
+/** Applies a gallery template: creates a workflow + initial version server-side. */
+export function useApplyTemplate() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      templateId,
+      workspaceId,
+      ownerId,
+    }: {
+      templateId: string
+      workspaceId: string
+      ownerId: string
+    }) => {
+      const { data } = await apiClient.post(`/api/v1/templates/${templateId}/apply`, {
+        workspace_id: workspaceId,
+        owner_id: ownerId,
+      })
+      return data as { workflow_id: string; version_id: string; name: string }
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['workflows'] })
+      qc.invalidateQueries({ queryKey: ['workflow', data.workflow_id] })
+    },
+  })
+}
+
 export function useTemplates() {
   return useQuery({
     queryKey: ['templates'],
