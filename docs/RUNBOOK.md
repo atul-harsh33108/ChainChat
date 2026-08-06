@@ -9,6 +9,8 @@ make dev
 ```
 
 Open http://localhost:5173 for the frontend. The gateway is at http://localhost:8000.
+The compose stack includes the `execution-worker` (RQ worker) — without it, executions
+stay `pending` forever.
 
 ## Deploy to AWS
 
@@ -105,4 +107,7 @@ done
 | 503 from gateway | Upstream service unhealthy | Check ECS task health, CloudWatch logs |
 | DB connection errors | RDS security group or credentials | Verify `DATABASE_URL` and SG rules |
 | Frontend blank | Missing Clerk publishable key | Check `VITE_CLERK_PUBLISHABLE_KEY` |
-| AI execution fails | Missing OpenAI/Anthropic key | Check execution-service env |
+| AI execution fails | Missing/invalid OpenRouter key (`OPENAI_API_KEY`) or retired model id | Check execution-service env; verify model IDs at openrouter.ai/models |
+| Executions stuck in `pending` | RQ worker not consuming the `execution` queue | Run the `execution-worker` service (included in docker-compose) or `rq worker execution` |
+| Local tests/dev hit the wrong database (`ModuleNotFoundError: psycopg`, foreign DB names) | Global `DATABASE_URL`/`REDIS_URL` env vars override each service's `.env` | Clear or override them before running locally (see README "Local gotcha") |
+| Webhook calls 404/401 through the gateway | Known bug BUG-01 (routing + auth-skip) | See `docs/audit/AUDIT.md`; fix tracked in `docs/audit/IMPLEMENTATION-PLAN.md` P1 |

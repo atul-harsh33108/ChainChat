@@ -29,7 +29,7 @@ chainchat/
 │   └── web/                 # React + Vite frontend
 ├── services/
 │   ├── gateway/             # API gateway (JWT validation + routing)
-│   ├── auth-service/        # Users, workspaces, invites
+│   ├── auth-service/        # Users, workspaces, invites, admin console
 │   ├── workflow-service/    # Workflow CRUD, versions, templates
 │   ├── execution-service/   # AI execution engine
 │   ├── billing-service/     # Stripe subscription scaffolding
@@ -39,6 +39,7 @@ chainchat/
 ├── infra/
 │   └── terraform/           # AWS infrastructure
 ├── docs/
+│   ├── audit/               # Verified audit, implementation plan, live progress tracker
 │   ├── HLD.md               # High-Level Design
 │   └── LLD.md               # Low-Level Design
 ├── docker-compose.yml
@@ -49,6 +50,9 @@ chainchat/
 
 - [Product Pitch (plain-language overview)](docs/PRODUCT-PITCH.md) — what ChainChat is, the problem it solves, and how it works for a non-technical reader
 - [How It Works (implementation ground truth)](docs/HOW-IT-WORKS.md) — how the product actually behaves as built, including what's real vs. still stubbed
+- [Codebase Audit (2026-08-06)](docs/audit/AUDIT.md) — verified status of every feature: what works, what's broken, what's missing
+- [Implementation Plan](docs/audit/IMPLEMENTATION-PLAN.md) — phased roadmap for closing the gaps
+- [Progress Tracker](docs/audit/PROGRESS.md) — **live status board + session log; read this first when resuming work**
 - [High-Level Design (HLD)](docs/HLD.md)
 - [Low-Level Design (LLD)](docs/LLD.md)
 - [Architecture & Developer Guide](docs/ARCHITECTURE.md)
@@ -58,13 +62,17 @@ chainchat/
 
 A React/Vite SPA authenticates with Clerk and calls a single FastAPI **gateway**, which
 validates the JWT, injects `x-user-id` / `x-workspace-id` / `x-role` headers, and proxies
-each request by path prefix to one of six services. Today the **workflow-service** (real
-CRUD, versions, forks, templates) and **execution-service** (a real DAG engine that runs
+each request by path prefix to one of six services. The **workflow-service** (real CRUD,
+versions, forks, templates) and **execution-service** (a real DAG engine that runs
 prompt-chain steps in dependency order, with retries and cancellation, calling live LLMs
-through OpenRouter and streaming progress over polling-based SSE) are fully implemented.
-The **auth-service**, **notification-service**, Clerk webhook sync, cross-service events,
-and parts of **billing** are still placeholders. See
-[docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) for the full descriptive walkthrough.
+through OpenRouter) are fully implemented **and wired end-to-end from the UI** — you can
+build, save, run, and remix a prompt chain and watch it execute. The **auth-service**
+persists users via just-in-time Clerk sync and hosts the **admin console** (user
+directory, time-limited Pro grants); its workspace CRUD and Clerk webhook are still
+stubs. **Billing** makes real Stripe calls with placeholder fallbacks, and the
+**notification-service** has real CRUD but no triggers yet. See
+[docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) for the full walkthrough and
+[docs/audit/AUDIT.md](docs/audit/AUDIT.md) for the verified gap list.
 
 ## Services
 
@@ -92,7 +100,14 @@ make format        # auto-format code
 
 ## Environment Setup
 
-Copy `.env.example` to `.env` in each service and in `apps/web`. Fill in Clerk, Stripe, OpenAI, and Anthropic keys where applicable. The app runs with placeholder integrations when keys are omitted.
+Copy `.env.example` to `.env` in each service and in `apps/web`. Fill in Clerk, Stripe, OpenAI, and Anthropic keys where applicable. The app runs with placeholder integrations when keys are omitted. (`OPENAI_API_KEY` is used as the **OpenRouter** key by the execution-service.)
+
+> ⚠️ **Local gotcha:** pydantic-settings prefers **real environment variables over each
+> service's `.env` file**. If your machine globally exports `DATABASE_URL` /
+> `REDIS_URL` (e.g. from another project), local runs and `pytest` will silently use
+> them — typically surfacing as `ModuleNotFoundError: psycopg` or connections to the
+> wrong database. Clear them first: `$env:DATABASE_URL=$null; $env:REDIS_URL=$null`
+> (PowerShell) or `unset DATABASE_URL REDIS_URL` (bash).
 
 ## License
 
