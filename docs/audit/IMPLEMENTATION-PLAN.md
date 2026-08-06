@@ -12,18 +12,18 @@ small and mergeable.
 
 ## Phase overview
 
-| Phase | Theme | Issues | Effort | Depends on |
-|---|---|---|---|---|
-| P0 | Make CI green | BUG-02, BUG-03, BUG-04 | S | — |
-| P1 | Gateway webhook routing | BUG-01 | S | — |
-| P2 | Templates end-to-end | BUG-05, FEAT-06 | M | — |
-| P3 | Frontend honesty pass | BUG-06 (FE), BUG-07, BUG-08 | M | — |
-| P4 | Auth completion | GAP-03, GAP-04 | L | P1 |
-| P5 | Authorization (RBAC) | FEAT-01 | L | P4 (soft) |
-| P6 | Billing lifecycle + plan gating + usage | GAP-01, GAP-05, GAP-06, BUG-06 (BE) | L | P1, P5 |
-| P7 | Comments, notifications, events | GAP-09, GAP-02, FEAT-02, FEAT-05 | L | P5 |
-| P8 | Workflow semantics | GAP-07, GAP-08 | L | P2 |
-| P9 | Hardening & coverage | FEAT-03, FEAT-04, FEAT-07, FEAT-08 | M–L | all |
+| Phase | Theme | Issues | Effort | Depends on | Status |
+|---|---|---|---|---|---|
+| P0 | Make CI green | BUG-02, BUG-03, BUG-04 | S | — | ✅ 2026-08-06 |
+| P1 | Gateway webhook routing | BUG-01 | S | — | ✅ 2026-08-06 |
+| P2 | Templates end-to-end | BUG-05, FEAT-06 | M | — | ✅ 2026-08-06 |
+| P3 | Frontend honesty pass | BUG-06 (FE), BUG-07, BUG-08 | M | — | ✅ 2026-08-06 |
+| P4 | Auth completion | GAP-03, GAP-04 | L | P1 ✅ | ⬜ next |
+| P5 | Authorization (RBAC) | FEAT-01 | L | P4 (soft) | ⬜ |
+| P6 | Billing lifecycle + plan gating + usage | GAP-01, GAP-05, GAP-06, BUG-06 (BE) | L | P1, P5 | ⬜ |
+| P7 | Comments, notifications, events | GAP-09, GAP-02, FEAT-02, FEAT-05 | L | P5 | ⬜ |
+| P8 | Workflow semantics | GAP-07, GAP-08 | L | P2 | ⬜ |
+| P9 | Hardening & coverage | FEAT-03, FEAT-04, FEAT-07, FEAT-08 | M–L | all | ⬜ |
 
 P0–P3 are independent and can be done in any order — fix broken things before building
 on them.
@@ -31,6 +31,8 @@ on them.
 ---
 
 ## P0 — Make CI green
+
+**Completed 2026-08-06.** Deviations from the task list: enabling mypy also surfaced and fixed 3 real bugs (gateway `http_client` None guard, `engine.py` response narrowing + `dependents` annotation), and all DB models were migrated to SQLAlchemy 2.0 style (`DeclarativeBase`/`Mapped`/`mapped_column`, `async_sessionmaker`) so mypy checks models natively without a plugin.
 
 **Goal:** every check `ci.yml` runs passes locally and on the next `main` push.
 
@@ -50,6 +52,8 @@ per-service `ruff check src`, `mypy .`, `pytest` all exit 0.
 
 ## P1 — Gateway webhook routing
 
+**Completed 2026-08-06.** As planned; deliverable test suite is `services/gateway/tests/test_proxy.py` (6 tests, mocked upstream).
+
 | # | Task | Files |
 |---|---|---|
 | 1 | Add `"webhooks": settings.auth_service_url` to `SERVICE_MAP` | `services/gateway/src/gateway/main.py` |
@@ -60,6 +64,8 @@ per-service `ruff check src`, `mypy .`, `pytest` all exit 0.
 **Tests:** the new pytest module is the deliverable.
 
 ## P2 — Templates end-to-end
+
+**Completed 2026-08-06.** As planned; also created the workflow-service local venv to run the new apply-endpoint tests.
 
 | # | Task | Files |
 |---|---|---|
@@ -72,6 +78,8 @@ per-service `ruff check src`, `mypy .`, `pytest` all exit 0.
 opens with the template graph as version 1.
 
 ## P3 — Frontend honesty pass
+
+**Completed 2026-08-06.** Deviations: pulled in two backend blockers found while wiring — billing `workspace_id` now coerces Clerk org ids (new `ids.py` + schema validators + header coercion), and the stripe 10 exception reference (`stripe.SignatureVerificationError`) was fixed. The portal customer lookup stays in P6 as planned. Billing venv created locally.
 
 | # | Task | Files |
 |---|---|---|

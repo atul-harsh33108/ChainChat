@@ -1,9 +1,12 @@
 # ChainChat Codebase Audit
 
 - **Date:** 2026-08-06
-- **Branch:** `test-v2-30-7` (HEAD `e1f95fe`)
+- **Branch:** `test-v2-30-7` (audited at `e1f95fe`; fixes land on top)
 - **Scope:** entire repo — gateway + 5 FastAPI services, React/Vite frontend, docker-compose, CI/CD, docs
 - **Companion docs:** [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) (phased fix plan) · [PROGRESS.md](PROGRESS.md) (live tracker, updated every work session)
+- **Status snapshot (2026-08-06):** P0–P3 complete — all 9 BUGs addressed (BUG-06's
+  portal-customer backend piece remains, scheduled in P6). GAP/FEAT items open.
+  Live status: PROGRESS.md.
 
 Every finding has a stable ID — `BUG-xx` = implemented but broken, `GAP-xx` = partially
 implemented, `FEAT-xx` = designed but absent. The same IDs are used across the plan and
@@ -29,7 +32,11 @@ This audit ran the code, not just read it:
 > routing/graph refactor) and `e1f95fe` (admin console). Its "known gaps" 1–3
 > (run-workflow contract, ignored list filter, camelCase/snake_case mismatch) and the
 > `users/me` demo-data gap were **already fixed** when this audit ran. HOW-IT-WORKS.md
-> has been updated as part of this audit.
+> has been updated as part of this audit.>
+> **Re-run after P0–P3 (2026-08-06):** eslint 0 problems · prettier clean · tsc 0
+> errors · vitest 1/1 · ruff clean (all 6 services) · mypy clean (all 6 services) ·
+> pytest 18 passing across gateway (7), auth (1), workflow (4), billing (6).
+> **All CI gates green.**
 
 ## 2. Implemented and working correctly
 
@@ -55,7 +62,7 @@ This audit ran the code, not just read it:
 - `POST /api/v1/webhooks/clerk` → **404**: `SERVICE_MAP` in `services/gateway/src/gateway/main.py` has no `"webhooks"` key; routing fails before the auth-skip check runs.
 - `POST /api/v1/billing/webhooks/stripe` → **401**: the auth skip is `path.startswith("webhooks/")`, which never matches `billing/webhooks/…`.
 - Harmless today only because both handlers are no-ops. Blocks GAP-01 and GAP-04.
-- **Fix in:** P1.
+- **Status: ✅ FIXED 2026-08-06 (P1)** — `webhooks` added to `SERVICE_MAP`; auth skip matches any `webhooks` segment; covered by `gateway/tests/test_proxy.py` (6 tests).
 
 ### BUG-02 — Frontend ESLint fails (CI red) 🔴
 `npm run lint` runs with `--max-warnings 0`; current output = 5 errors, 3 warnings:
@@ -69,12 +76,12 @@ This audit ran the code, not just read it:
 | `src/components/ui/textarea.tsx:4` | error | `@typescript-eslint/no-empty-object-type` |
 | `src/components/ui/badge.tsx:29`, `src/components/ui/button.tsx:48`, `src/main.tsx:22` | warning | `react-refresh/only-export-components` |
 
-- **Fix in:** P0.
+- **Status: ✅ FIXED 2026-08-06 (P0)** — eslint now reports 0 problems.
 
 ### BUG-03 — Prettier check fails (CI red) 🔴
 `npm run format:check` → "Code style issues found in 31 files." `ci.yml` runs this step,
 so the frontend CI job fails.
-- **Fix in:** P0.
+- **Status: ✅ FIXED 2026-08-06 (P0)** — `format:check` passes.
 
 ### BUG-04 — Backend mypy fails the way CI runs it (CI red) 🔴
 `ci.yml` runs `mypy services/<svc>/src` from the repo root → 28 `import-not-found`
@@ -82,7 +89,7 @@ errors: the code imports `from src.<pkg>…` but there is no `src/__init__.py` a
 mypy path config. Running `mypy .` from a service directory (Makefile style) fails
 differently: "Source file found twice under different module names". Never surfaced
 because CI only triggers on `main`, and this work happened on `test-v2-30-7`.
-- **Fix in:** P0.
+- **Status: ✅ FIXED 2026-08-06 (P0)** — `src/__init__.py` + per-service `mypy.ini`; CI runs from the service dir. Enabling mypy then surfaced (and fixed) 3 real bugs: gateway None guard, engine.py narrowing + annotation; models migrated to SQLAlchemy 2.0 style.
 
 ### BUG-05 — "Use template" flow is a dead end 🟠
 `apps/web/src/pages/templates.tsx:28` navigates to `/app/w/<org>/workflows/new?template=<id>`,
@@ -90,22 +97,22 @@ but **nothing reads that param** (no `useSearchParams` anywhere in `apps/web/src
 working backend endpoint `POST /api/v1/templates/{id}/apply`
 (`services/workflow-service/src/workflow_service/routers/templates.py:56`) is never
 called. Compounded by FEAT-06 (no seed data → gallery empty).
-- **Fix in:** P2.
+- **Status: ✅ FIXED 2026-08-06 (P2)** — the builder consumes `?template=` and calls the apply endpoint; seed data via `make seed`.
 
 ### BUG-06 — Billing dead ends 🟠
 - `apps/web/src/pages/settings.tsx:82-83` — "Upgrade to Pro" and "Customer portal" buttons have **no click handlers**.
 - `services/billing-service/src/billing_service/routers/billing.py:86` — portal hardcodes `customer="cus_placeholder"` → would 502 against real Stripe.
-- **Fix in:** P3 (frontend) + P6 (backend).
+- **Status: ✅ frontend FIXED 2026-08-06 (P3)** — buttons wired; the billing API coerces Clerk workspace ids; the `stripe.error` crash is fixed. The portal customer lookup remains open (P6).
 
 ### BUG-07 — Dashboard is hardcoded 🟠
 `apps/web/src/pages/dashboard.tsx` — "Pro trial" badge (line 29) ignores the real plan
 from `useMe()`; "Recent workflows" (lines 85-92) is a static empty state that never
 fetches.
-- **Fix in:** P3.
+- **Status: ✅ FIXED 2026-08-06 (P3)** — real recent workflows + real plan badge.
 
 ### BUG-08 — Members tab invite is an `alert()` 🟠
 `apps/web/src/pages/settings.tsx:61` — `onClick={() => alert('Open Clerk dashboard to invite members')}`.
-- **Fix in:** P3.
+- **Status: ✅ FIXED 2026-08-06 (P3)** — real members list + Clerk invites.
 
 ### BUG-09 — Machine-global env vars override service `.env` files 🟡
 The dev machine exports `DATABASE_URL=postgresql+psycopg://mlops:…@postgres:5432/mlops`
@@ -114,7 +121,7 @@ process env over `.env`, so local `pytest`/uvicorn silently use the foreign data
 (and the `psycopg` driver, which isn't installed → test collection errors). Verified:
 clearing the vars makes the suite pass. Mitigation documented in README + RUNBOOK;
 optional repo-level guard in P9.
-- **Status:** documented 2026-08-06 (see PROGRESS.md).
+- **Status: ✅ FIXED (docs) 2026-08-06** — README + RUNBOOK mitigations documented; optional boot guard in P9.
 ## 4. Partially implemented (GAP-xx)
 
 | ID | Feature | Current state |
@@ -146,8 +153,8 @@ optional repo-level guard in P9.
 
 1. **FEAT-01** — no authorization enforcement anywhere downstream.
 2. **FEAT-04** — unverified JWT decode is the default; fine for dev, dangerous deployed.
-3. **BUG-01** — webhook auth-skip logic is broken; when fixed, signature verification
-   must land with it (GAP-01/GAP-04) or webhooks become unauthenticated write paths.
+3. **BUG-01** — routing fixed in P1. Signature verification must still land with
+   GAP-01/GAP-04, or webhooks remain unauthenticated (currently no-op) write paths.
 4. Admin authorization (`ADMIN_EMAILS` in config, not DB) — sound; verified in `admin.py`.
 5. Services trust gateway-injected headers blindly — safe only while the gateway is the
    single public entry point; keep it that way.
