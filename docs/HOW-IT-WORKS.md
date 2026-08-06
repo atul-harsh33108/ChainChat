@@ -309,8 +309,8 @@ Tailwind + shadcn/ui, React Flow, and Clerk for auth.
 **Pages**:
 - **landing** — marketing page (the `$12/month` pitch; mentions cost estimates, which
   aren't implemented — GAP-06).
-- **dashboard** — real Clerk org name, but "Recent workflows" is a hardcoded empty
-  state and the "Pro trial" badge is hardcoded (BUG-07).
+- **dashboard** — real Clerk org name, real plan badge from `useMe()`, and "Recent
+  workflows" lists the 5 most recently updated workflows (fixed 2026-08-06, P3).
 - **workflow-list** — real list via `useWorkflows`; create then navigates to the
   builder.
 - **workflow-builder** — React Flow canvas with start/prompt/decision/output nodes; Save
@@ -322,8 +322,9 @@ Tailwind + shadcn/ui, React Flow, and Clerk for auth.
   cosmetic — their conditions are never evaluated (GAP-08).
 - **workflow-runs** — real execution history per workflow (`?chain_id=`), with step
   outputs, retry counts, and status badges.
-- **settings** — General (Clerk org info + create org), Members (invite button is an
-  `alert()` — BUG-08), Billing (buttons have no handlers — BUG-06).
+- **settings** — General (Clerk org info + create org); Members lists real org members
+  and invites via `organization.inviteMember` (admins only); Billing wires checkout +
+  portal with placeholder-mode toasts and the real plan badge (fixed 2026-08-06, P3).
 - **templates** — real gallery via `useTemplates`; "Use template" navigates to
   `/workflows/new?template=<id>`, where the builder applies it via
   `POST /templates/{id}/apply` and opens the created workflow (fixed 2026-08-06, P2).
@@ -359,8 +360,10 @@ JIT-synced row). Current seams (audit IDs in brackets — see `docs/audit/AUDIT.
 2. ~~**"Use template" dead end [BUG-05]**~~ — **FIXED 2026-08-06 (P2):** the builder
    reads `?template=`, calls `POST /templates/{id}/apply`, and navigates to the created
    workflow. Seed data ships via `make seed` (FEAT-06).
-3. **Frontend placeholders [BUG-06, BUG-07, BUG-08].** Dead billing buttons, hardcoded
-   dashboard, `alert()` member invites.
+3. ~~**Frontend placeholders [BUG-06, BUG-07, BUG-08]**~~ — **FIXED 2026-08-06 (P3):**
+   dashboard shows real data, billing buttons call checkout/portal (the billing API now
+   also coerces Clerk workspace ids instead of 422/500ing), member invites go through
+   Clerk. The Stripe portal still uses a placeholder customer server-side (P6).
 4. **No plan enforcement [GAP-05].** Pro entitlements are computed and displayed but
    gate nothing; `GET /users/{clerk_id}/entitlement` has no callers.
 5. **Decision/output nodes don't execute [GAP-08].** Only `prompt` nodes become steps;

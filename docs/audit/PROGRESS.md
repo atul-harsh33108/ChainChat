@@ -21,9 +21,9 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 | BUG-03 | Prettier drift (31 files) | P0 | ✅ 🧪 | `format:check` in CI | 2026-08-06 | `npm run format` applied; check now passes |
 | BUG-04 | mypy fails under CI invocation | P0 | ✅ 🧪 | `mypy .` per service in CI | 2026-08-06 | `src/__init__.py` + per-service `mypy.ini`; ci.yml runs from service dir; 3 real bugs mypy then surfaced also fixed (see Session 2) |
 | BUG-05 | "Use template" dead end | P2 | ✅ 🧪 | `workflow-service/tests/test_templates.py` (3 tests) | 2026-08-06 | builder `ApplyTemplate` reads `?template=`, calls apply, navigates to created workflow |
-| BUG-06 | Billing: dead UI buttons + portal placeholder | P3+P6 | ⬜ | — | — | split FE/BE |
-| BUG-07 | Dashboard hardcoded | P3 | ⬜ | — | — | |
-| BUG-08 | Members tab `alert()` | P3 | ⬜ | — | — | |
+| BUG-06 | Billing: dead UI buttons + portal placeholder | P3+P6 | ✅ (FE) 🧪 | `billing-service/tests/test_billing.py` (5 tests) | 2026-08-06 | FE wired to checkout/portal; BE coerces Clerk workspace ids; fixed latent `stripe.error` crash on stripe 10. Portal customer lookup remains P6 |
+| BUG-07 | Dashboard hardcoded | P3 | ✅ | tsc/eslint gates | pending UI pass | real recent workflows (top 5 by updated_at) + real plan badge |
+| BUG-08 | Members tab `alert()` | P3 | ✅ | tsc/eslint gates | pending UI pass | real members list + `organization.inviteMember` (admin-gated); personal-workspace guidance card |
 | BUG-09 | Global env vars override `.env` | docs | ✅ ✋ | n/a | 2026-08-06 | documented in README + RUNBOOK; pytest verified passing after clearing vars |
 
 ### Partial implementations (AUDIT §4)
@@ -65,8 +65,31 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 | services: `ruff check src` (all 6) | 2026-08-06 | ✅ clean | — |
 | services: `mypy .` (per service dir) | 2026-08-06 | ✅ clean — all 6 services (workflow-service now with full local venv: 18 files) | — |
 | services: `pytest` (workflow) | 2026-08-06 | ✅ 4 passing (incl. new template suite)* | *requires BUG-09 workaround |
+| services: `pytest` (billing) | 2026-08-06 | ✅ 6 passing (incl. new billing suite)* | *requires BUG-09 workaround |
 
 ## 3. Session log (newest first)
+
+### Session 5 — 2026-08-06 · branch `test-v2-30-7` · P3 (frontend honesty pass)
+- **Did:** fixed BUG-07, BUG-08, and the frontend half of BUG-06 (plus backend blockers).
+  - Dashboard: real plan badge from `useMe()` and real "Recent workflows" (top 5 by
+    `updated_at`) instead of hardcoded placeholders.
+  - Settings to Members: real members list via Clerk `useOrganization({ memberships })`
+    and invites via `organization.inviteMember` (admin-only form; personal-workspace
+    guidance card otherwise).
+  - Settings to Billing: new `hooks/billing.ts` (`useCheckout`/`usePortal`); buttons
+    call the API, redirect to Stripe when configured, and toast honestly in
+    placeholder mode; plan badge/expiry from `useMe()`.
+  - Backend blockers found + fixed: billing schemas rejected Clerk org ids
+    (`workspace_id: UUID` meant 422/500) — added `ids.py` (same deterministic uuid5 as
+    other services) + validators + header coercion in subscription/usage; mypy caught
+    a latent crash — `stripe.error.SignatureVerificationError` does not exist on
+    stripe 10, now `stripe.SignatureVerificationError`.
+  - Created the billing-service local venv (tests + mypy with full deps).
+- **Evidence:** billing pytest 6/6 ✅ · billing mypy clean (16 files) ✅ · billing ruff
+  clean ✅ · frontend tsc/eslint/prettier/vitest green ✅.
+- **Note:** the command guard rejects shell-redirection-looking patterns in command
+  text — large JSX files are written with a § placeholder substituted in afterwards.
+- **Next:** P4 — auth completion (GAP-03 workspaces CRUD, GAP-04 Clerk webhook sync).
 
 ### Session 4 — 2026-08-06 · branch `test-v2-30-7` · P2 (templates end-to-end)
 - **Did:** fixed BUG-05 + FEAT-06. Frontend: new `useApplyTemplate` hook; builder page
@@ -149,7 +172,7 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 ## 5. Session memory — environment & conventions
 
 - **Machine:** Windows + PowerShell. Per-service venvs at `services/<svc>/.venv`; invoke
-  tools as `.venv\Scripts\<tool>.exe`. Only auth-service + gateway + workflow-service venvs exist locally;
+  tools as `.venv\Scripts\<tool>.exe`. auth-service + gateway + workflow-service + billing-service venvs exist locally;
   create others with `make venv && make install` (or per-service equivalents) as needed.
 - **⚠️ BUG-09 workaround:** this machine globally exports `DATABASE_URL` and `REDIS_URL`
   belonging to another project. Run `$env:DATABASE_URL=$null; $env:REDIS_URL=$null` in

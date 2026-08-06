@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.billing_service.config import settings
+from src.billing_service.ids import to_uuid
 from src.billing_service.db import get_db
 from src.billing_service.models import Subscription, UsageRecord
 from src.billing_service.schemas import (
@@ -27,7 +28,7 @@ if settings.stripe_secret_key:
 @router.get("/subscription", response_model=SubscriptionRead)
 async def get_subscription(request: Request, db: AsyncSession = Depends(get_db)):
     workspace_id_str = request.headers.get("x-workspace-id")
-    workspace_id = uuid.UUID(workspace_id_str) if workspace_id_str else uuid.uuid4()
+    workspace_id = to_uuid(workspace_id_str) if workspace_id_str else uuid.uuid4()
 
     result = await db.execute(
         select(Subscription).where(Subscription.workspace_id == workspace_id)
@@ -105,7 +106,7 @@ async def stripe_webhook(request: Request):
             stripe.Webhook.construct_event(
                 payload, sig_header, settings.stripe_webhook_secret
             )
-        except stripe.error.SignatureVerificationError:
+        except stripe.SignatureVerificationError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid webhook signature",
@@ -122,7 +123,7 @@ async def stripe_webhook(request: Request):
 @router.get("/usage", response_model=list[UsageRecordRead])
 async def list_usage(request: Request, db: AsyncSession = Depends(get_db)):
     workspace_id_str = request.headers.get("x-workspace-id")
-    workspace_id = uuid.UUID(workspace_id_str) if workspace_id_str else None
+    workspace_id = to_uuid(workspace_id_str) if workspace_id_str else None
 
     if workspace_id:
         result = await db.execute(

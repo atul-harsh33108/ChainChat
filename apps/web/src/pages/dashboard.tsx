@@ -1,23 +1,31 @@
 import { Link, useParams } from 'react-router-dom'
 import { useOrganization, useUser } from '@clerk/clerk-react'
+import { useMe } from '@/hooks/admin'
+import { useWorkflows } from '@/hooks/workflows'
+import { latestVersion } from '@/lib/graph'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Workflow, Users, CreditCard, ArrowRight } from 'lucide-react'
+import { Workflow, Users, CreditCard, ArrowRight, Crown } from 'lucide-react'
 
 export function DashboardPage() {
   const { organization, isLoaded } = useOrganization()
   const { user } = useUser()
   const { workspaceId } = useParams()
 
-  if (!isLoaded) {
-    return <DashboardSkeleton />
-  }
-
   // Organizations can be disabled on the Clerk instance; fall back to the
   // route param and finally the user's own id (personal workspace).
   const activeId = workspaceId || organization?.id || user?.id
+
+  const { data: me } = useMe()
+  const { data: workflows, isLoading: workflowsLoading } = useWorkflows(activeId)
+
+  if (!isLoaded) return <DashboardSkeleton />
+
+  const recent = [...(workflows ?? [])]
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .slice(0, 5)
 
   return (
     <div className="p-8 max-w-5xl">
@@ -26,7 +34,18 @@ export function DashboardPage() {
           <h1 className="text-3xl font-bold">{organization?.name || 'My workspace'}</h1>
           <p className="text-muted-foreground">Manage your team's AI workflows.</p>
         </div>
-        <Badge variant="secondary">Pro trial</Badge>
+        {me && (
+          <Badge variant={me.plan === 'pro' ? 'default' : 'secondary'}>
+            {me.plan === 'pro' ? (
+              <>
+                <Crown className="h-3 w-3 mr-1" />
+                Pro
+              </>
+            ) : (
+              'Free plan'
+            )}
+          </Badge>
+        )}
       </div>
 
       <div className="grid md:grid-cols-3 gap-4 mb-8">
@@ -82,14 +101,43 @@ export function DashboardPage() {
           <Button>Create workflow</Button>
         </Link>
       </div>
-      <Card className="mt-4">
-        <CardContent className="py-12 text-center">
-          <CardDescription>No workflows yet. Create your first AI prompt chain.</CardDescription>
-          <Link to={`/app/w/${activeId}/workflows/new`}>
-            <Button className="mt-4">Create workflow</Button>
-          </Link>
-        </CardContent>
-      </Card>
+
+      {workflowsLoading ? (
+        <div className="mt-4 space-y-3">
+          <Skeleton className="h-20" />
+          <Skeleton className="h-20" />
+        </div>
+      ) : recent.length ? (
+        <div className="mt-4 grid gap-3">
+          {recent.map((wf) => {
+            const version = latestVersion(wf.versions)
+            return (
+              <Link key={wf.id} to={`/app/w/${activeId}/workflows/${wf.id}`}>
+                <Card className="hover:bg-accent/50 transition-colors">
+                  <CardHeader className="py-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{wf.name}</CardTitle>
+                      {version && <Badge variant="outline">v{version.version_number}</Badge>}
+                    </div>
+                    <CardDescription>
+                      Updated {new Date(wf.updated_at).toLocaleString()}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            )
+          })}
+        </div>
+      ) : (
+        <Card className="mt-4">
+          <CardContent className="py-12 text-center">
+            <CardDescription>No workflows yet. Create your first AI prompt chain.</CardDescription>
+            <Link to={`/app/w/${activeId}/workflows/new`}>
+              <Button className="mt-4">Create workflow</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

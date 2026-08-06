@@ -2,7 +2,9 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from src.billing_service.ids import to_uuid
 
 
 class SubscriptionRead(BaseModel):
@@ -38,6 +40,12 @@ class CheckoutCreate(BaseModel):
     success_url: str = "http://localhost:5173/billing/success"
     cancel_url: str = "http://localhost:5173/billing/cancel"
 
+    @field_validator("workspace_id", mode="before")
+    @classmethod
+    def _coerce_workspace_id(cls, value):
+        # Accept external (Clerk) workspace identifiers, not just UUIDs.
+        return to_uuid(value) if value is not None else value
+
 
 class CheckoutResponse(BaseModel):
     session_id: str
@@ -47,6 +55,12 @@ class CheckoutResponse(BaseModel):
 class PortalCreate(BaseModel):
     workspace_id: UUID
     return_url: str = "http://localhost:5173/billing"
+
+    @field_validator("workspace_id", mode="before")
+    @classmethod
+    def _coerce_workspace_id(cls, value):
+        # Accept external (Clerk) workspace identifiers, not just UUIDs.
+        return to_uuid(value) if value is not None else value
 
 
 class PortalResponse(BaseModel):
