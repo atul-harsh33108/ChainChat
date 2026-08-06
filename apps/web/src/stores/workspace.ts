@@ -11,8 +11,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
   persist(
     (set) => ({
       currentWorkspaceId: null,
-      setCurrentWorkspace: (workspace) =>
-        set({ currentWorkspaceId: workspace?.id || null }),
+      setCurrentWorkspace: (workspace) => set({ currentWorkspaceId: workspace?.id || null }),
     }),
     { name: 'chainchat-workspace' }
   )

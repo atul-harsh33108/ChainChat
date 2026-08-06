@@ -18,8 +18,7 @@ export function TemplatesPage() {
       organization ||
       (
         (await setActive?.({ organization: 'first' })) as
-          | { organization?: { id: string } }
-          | undefined
+          { organization?: { id: string } } | undefined
       )?.organization
     if (!org) {
       navigate('/login')
@@ -41,7 +40,9 @@ export function TemplatesPage() {
             <span className="font-bold text-lg">Template gallery</span>
           </div>
           <Link to="/login">
-            <Button variant="ghost" size="sm">Sign in</Button>
+            <Button variant="ghost" size="sm">
+              Sign in
+            </Button>
           </Link>
         </div>
       </header>
@@ -49,7 +50,8 @@ export function TemplatesPage() {
       <main className="flex-1 container mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold mb-4">Start with a template</h1>
         <p className="text-muted-foreground mb-8 max-w-2xl">
-          Browse official and community prompt-chain templates. Fork any template into your workspace and customize it.
+          Browse official and community prompt-chain templates. Fork any template into your
+          workspace and customize it.
         </p>
 
         {isLoading ? (
@@ -74,7 +76,9 @@ export function TemplatesPage() {
                     {t.category && <Badge variant="secondary">{t.category}</Badge>}
                     {t.is_public && <Badge>Public</Badge>}
                   </div>
-                  <Button className="w-full mt-4" onClick={() => handleUse(t.id)}>Use template</Button>
+                  <Button className="w-full mt-4" onClick={() => handleUse(t.id)}>
+                    Use template
+                  </Button>
                 </CardContent>
               </Card>
             ))}

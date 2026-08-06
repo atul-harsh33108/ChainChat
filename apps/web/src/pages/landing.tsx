@@ -17,7 +17,9 @@ export function LandingPage() {
               Templates
             </Link>
             <Link to="/login">
-              <Button variant="ghost" size="sm">Sign in</Button>
+              <Button variant="ghost" size="sm">
+                Sign in
+              </Button>
             </Link>
             <Link to="/sign-up">
               <Button size="sm">Get started</Button>
@@ -28,21 +30,24 @@ export function LandingPage() {
 
       <main className="flex-1">
         <section className="container mx-auto px-4 py-24 text-center">
-          <h1 className="text-5xl font-bold tracking-tight mb-6">
-            AI workflows, built together
-          </h1>
+          <h1 className="text-5xl font-bold tracking-tight mb-6">AI workflows, built together</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-            Build multi-step AI prompt chains with your team. Share, remix, and run them like Notion docs.
+            Build multi-step AI prompt chains with your team. Share, remix, and run them like Notion
+            docs.
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link to="/sign-up">
               <Button size="lg">Start free trial</Button>
             </Link>
             <Link to="/templates">
-              <Button size="lg" variant="outline">Explore templates</Button>
+              <Button size="lg" variant="outline">
+                Explore templates
+              </Button>
             </Link>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">$12/month per team. No credit card required.</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            $12/month per team. No credit card required.
+          </p>
         </section>
 
         <section className="container mx-auto px-4 py-16">

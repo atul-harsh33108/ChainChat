@@ -25,7 +25,10 @@ jobs:
       - name: Lint with ruff
         run: services/${{ matrix.service }}/.venv/bin/ruff check services/${{ matrix.service }}/src
       - name: Type check with mypy
-        run: services/${{ matrix.service }}/.venv/bin/mypy services/${{ matrix.service }}/src
+        # Run from the service dir so mypy.ini is picked up (matches `make lint`);
+        # invoking from the repo root cannot resolve `src.<pkg>` imports (BUG-04).
+        working-directory: services/${{ matrix.service }}
+        run: .venv/bin/mypy .
       - name: Test with pytest
         run: services/${{ matrix.service }}/.venv/bin/pytest services/${{ matrix.service }}/tests
 

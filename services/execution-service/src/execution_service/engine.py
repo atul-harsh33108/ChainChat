@@ -102,7 +102,7 @@ def _friendly_error(exc: Exception) -> str:
         return f"Provider rejected the API key ({status}). Check OPENAI_API_KEY."
     if status == 404:
         return "Model not found (404). The model id may no longer exist on OpenRouter."
-    if status is not None:
+    if status is not None and response is not None:
         detail = ""
         try:
             payload = response.json()
@@ -179,7 +179,7 @@ async def _run_step_with_retries(
 async def _topological_steps(steps: list[ExecutionStep]) -> list[ExecutionStep]:
     step_map = {s.step_key: s for s in steps}
     in_degree = {s.step_key: len(s.depends_on or []) for s in steps}
-    dependents = {s.step_key: [] for s in steps}
+    dependents: dict[str, list[str]] = {s.step_key: [] for s in steps}
 
     for s in steps:
         for dep in s.depends_on or []:

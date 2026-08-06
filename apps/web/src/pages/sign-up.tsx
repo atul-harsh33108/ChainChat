@@ -6,12 +6,7 @@ export function SignUpPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardContent className="pt-6">
-          <SignUp
-            routing="path"
-            path="/sign-up"
-            signInUrl="/login"
-            fallbackRedirectUrl="/app"
-          />
+          <SignUp routing="path" path="/sign-up" signInUrl="/login" fallbackRedirectUrl="/app" />
         </CardContent>
       </Card>
     </div>

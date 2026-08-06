@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import type { GraphNode, NodeConfig, NodeType, WorkflowGraph } from '@/types'
+import type { GraphNode, NodeConfig, NodeType, Workflow, WorkflowGraph } from '@/types'
 import { DEFAULT_MODEL, FREE_MODELS, EMPTY_GRAPH, latestVersion, toStepKey } from '@/lib/graph'
 import { Play, Save, GitFork, ArrowLeft, History, Trash2 } from 'lucide-react'
 
@@ -55,59 +55,59 @@ function reactFlowType(type: NodeType): string {
   if (type === 'output') return 'output'
   return 'default'
 }
+/** The newest saved graph of the workflow being edited (empty for new ones). */
+function initialGraph(existing: Workflow | null): WorkflowGraph {
+  return latestVersion(existing?.versions)?.graph || EMPTY_GRAPH
+}
 
-function Builder() {
+function toFlowNodes(graph: WorkflowGraph): Node<NodeData>[] {
+  return (graph.nodes || []).map((n) => ({
+    id: n.id,
+    type: reactFlowType(n.type),
+    position: n.position || { x: 0, y: 0 },
+    data: {
+      label: n.label || n.type,
+      nodeType: n.type,
+      config: n.config || {},
+    },
+  }))
+}
+
+function toFlowEdges(graph: WorkflowGraph): Edge[] {
+  return (graph.edges || []).map((e) => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    label: e.label,
+  }))
+}
+
+function Builder({ existing }: { existing: Workflow | null }) {
   const { workspaceId, workflowId } = useParams()
   const { organization } = useOrganization()
   const { user } = useUser()
   const navigate = useNavigate()
   const activeId = workspaceId || organization?.id || user?.id
   const isNew = workflowId === 'new'
-
-  const { data: existing, isLoading } = useWorkflow(isNew ? undefined : workflowId)
   const updateWorkflow = useUpdateWorkflow()
   const createWorkflow = useCreateWorkflow()
   const createVersion = useCreateVersion()
   const runWorkflow = useRunWorkflow()
   const forkWorkflow = useForkWorkflow()
 
-  const [name, setName] = useState('Untitled workflow')
-  const [description, setDescription] = useState('')
-  const [nodes, setNodes, onNodesChange] = useNodesState<NodeData>([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  // The page gates rendering until the workflow has loaded and keys this
+  // component by workflow id, so state initializes straight from props. See
+  // react.dev/learn/you-might-not-need-an-effect (no hydration effect needed).
+  const [name, setName] = useState(existing?.name ?? 'Untitled workflow')
+  const [description, setDescription] = useState(existing?.description ?? '')
+  const [nodes, setNodes, onNodesChange] = useNodesState<NodeData>(
+    toFlowNodes(initialGraph(existing))
+  )
+  const [edges, setEdges, onEdgesChange] = useEdgesState(toFlowEdges(initialGraph(existing)))
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [runId, setRunId] = useState<string | null>(null)
   const { data: run } = useExecution(runId ?? undefined)
   const notifiedRef = useRef<string | null>(null)
-
-  // Hydrate the canvas from the newest saved version.
-  useEffect(() => {
-    if (!existing) return
-    setName(existing.name)
-    setDescription(existing.description || '')
-
-    const graph = latestVersion(existing.versions)?.graph || EMPTY_GRAPH
-    setNodes(
-      (graph.nodes || []).map((n) => ({
-        id: n.id,
-        type: reactFlowType(n.type),
-        position: n.position || { x: 0, y: 0 },
-        data: {
-          label: n.label || n.type,
-          nodeType: n.type,
-          config: n.config || {},
-        },
-      }))
-    )
-    setEdges(
-      (graph.edges || []).map((e) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        label: e.label,
-      }))
-    )
-  }, [existing, setNodes, setEdges])
 
   // Notify once when a run reaches a terminal state.
   useEffect(() => {
@@ -262,8 +262,6 @@ function Builder() {
     createVersion.isPending ||
     runWorkflow.isPending
 
-  if (isLoading && !isNew) return <BuilderSkeleton />
-
   const savedVersion = latestVersion(existing?.versions)
 
   return (
@@ -285,18 +283,22 @@ function Builder() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleFork} disabled={isNew || busy}>
-            <GitFork className="h-4 w-4 mr-2" />Remix
+            <GitFork className="h-4 w-4 mr-2" />
+            Remix
           </Button>
           <Link to={workflowId && !isNew ? `/app/w/${activeId}/workflows/${workflowId}/runs` : '#'}>
             <Button variant="outline" size="sm" disabled={isNew}>
-              <History className="h-4 w-4 mr-2" />Runs
+              <History className="h-4 w-4 mr-2" />
+              Runs
             </Button>
           </Link>
           <Button variant="outline" size="sm" onClick={handleSave} disabled={busy}>
-            <Save className="h-4 w-4 mr-2" />Save
+            <Save className="h-4 w-4 mr-2" />
+            Save
           </Button>
           <Button size="sm" onClick={handleRun} disabled={busy}>
-            <Play className="h-4 w-4 mr-2" />Run
+            <Play className="h-4 w-4 mr-2" />
+            Run
           </Button>
         </div>
       </header>
@@ -322,10 +324,18 @@ function Builder() {
         <aside className="w-80 border-l bg-card p-4 overflow-auto">
           <h2 className="font-semibold mb-3">Add node</h2>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" onClick={() => addNode('start')}>Start</Button>
-            <Button variant="outline" size="sm" onClick={() => addNode('prompt')}>Prompt</Button>
-            <Button variant="outline" size="sm" onClick={() => addNode('decision')}>Decision</Button>
-            <Button variant="outline" size="sm" onClick={() => addNode('output')}>Output</Button>
+            <Button variant="outline" size="sm" onClick={() => addNode('start')}>
+              Start
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => addNode('prompt')}>
+              Prompt
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => addNode('decision')}>
+              Decision
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => addNode('output')}>
+              Output
+            </Button>
           </div>
 
           <Separator className="my-4" />
@@ -334,7 +344,12 @@ function Builder() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">Node</h2>
-                <Button variant="ghost" size="icon" onClick={deleteSelected} aria-label="Delete node">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={deleteSelected}
+                  aria-label="Delete node"
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -361,7 +376,9 @@ function Builder() {
                       </SelectTrigger>
                       <SelectContent>
                         {FREE_MODELS.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -379,8 +396,8 @@ function Builder() {
                     <p className="text-xs text-muted-foreground">
                       Reference an upstream prompt node's output with{' '}
                       <code>{`{${toStepKey(
-                        nodes.find((n) => n.id !== selected.id && n.data.nodeType === 'prompt')?.id ||
-                          'step_id'
+                        nodes.find((n) => n.id !== selected.id && n.data.nodeType === 'prompt')
+                          ?.id || 'step_id'
                       )}}`}</code>
                     </p>
                   </div>
@@ -461,9 +478,19 @@ function BuilderSkeleton() {
 }
 
 export function WorkflowBuilderPage() {
+  const { workflowId } = useParams()
+  const isNew = workflowId === 'new'
+  const { data: existing, isLoading } = useWorkflow(isNew ? undefined : workflowId)
+
   return (
     <ReactFlowProvider>
-      <Builder />
+      {isLoading && !isNew ? (
+        <BuilderSkeleton />
+      ) : (
+        // Keyed by workflow id: switching workflows remounts the builder with
+        // fresh state initialized from the loaded workflow.
+        <Builder key={workflowId ?? 'new'} existing={existing ?? null} />
+      )}
     </ReactFlowProvider>
   )
 }

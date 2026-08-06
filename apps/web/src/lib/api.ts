@@ -27,7 +27,7 @@ export function setTokenProvider(provider: TokenProvider | null) {
 }
 
 apiClient.interceptors.request.use(async (config) => {
-  let token: string | null = null
+  let token: string | null
   try {
     token = tokenProvider ? await tokenProvider() : null
   } catch {

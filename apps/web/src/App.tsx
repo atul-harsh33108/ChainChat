@@ -38,36 +38,36 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            {/* Splat routes are required: Clerk's path routing navigates to
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        {/* Splat routes are required: Clerk's path routing navigates to
                 sub-paths such as /sign-up/verify-email-address (OTP step) and
                 /login/factor-one. Exact paths leave those URLs unmatched, which
                 renders a blank page. */}
-            <Route path="/login/*" element={<SignInPage />} />
-            <Route path="/sign-up/*" element={<SignUpPage />} />
-            <Route path="/templates" element={<TemplatesPage />} />
-            <Route
-              path="/app"
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<DashboardPage />} />
-              <Route path="w/:workspaceId" element={<DashboardPage />} />
-              <Route path="w/:workspaceId/workflows" element={<WorkflowListPage />} />
-              <Route path="w/:workspaceId/workflows/new" element={<WorkflowBuilderPage />} />
-              <Route path="w/:workspaceId/workflows/:workflowId" element={<WorkflowBuilderPage />} />
-              <Route path="w/:workspaceId/workflows/:workflowId/runs" element={<WorkflowRunsPage />} />
-              <Route path="w/:workspaceId/settings" element={<SettingsPage />} />
-              <Route path="admin" element={<AdminPage />} />
-            </Route>
-            {/* Fallback so an unmatched URL never renders an empty page. */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        <Toaster />
+        <Route path="/login/*" element={<SignInPage />} />
+        <Route path="/sign-up/*" element={<SignUpPage />} />
+        <Route path="/templates" element={<TemplatesPage />} />
+        <Route
+          path="/app"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="w/:workspaceId" element={<DashboardPage />} />
+          <Route path="w/:workspaceId/workflows" element={<WorkflowListPage />} />
+          <Route path="w/:workspaceId/workflows/new" element={<WorkflowBuilderPage />} />
+          <Route path="w/:workspaceId/workflows/:workflowId" element={<WorkflowBuilderPage />} />
+          <Route path="w/:workspaceId/workflows/:workflowId/runs" element={<WorkflowRunsPage />} />
+          <Route path="w/:workspaceId/settings" element={<SettingsPage />} />
+          <Route path="admin" element={<AdminPage />} />
+        </Route>
+        {/* Fallback so an unmatched URL never renders an empty page. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Toaster />
     </QueryClientProvider>
   )
 }

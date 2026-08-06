@@ -17,9 +17,9 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 | ID | Issue | Phase | Status | Automated test | Manual verify | Notes |
 |---|---|---|---|---|---|---|
 | BUG-01 | Gateway webhook routing (Clerk 404, Stripe 401) | P1 | ⬜ | — | — | |
-| BUG-02 | ESLint errors (5) + warnings (3) | P0 | ⬜ | — | — | exact list in AUDIT §3 |
-| BUG-03 | Prettier drift (31 files) | P0 | ⬜ | — | — | |
-| BUG-04 | mypy fails under CI invocation | P0 | ⬜ | — | — | |
+| BUG-02 | ESLint errors (5) + warnings (3) | P0 | ✅ 🧪 | `npm run lint` in CI | 2026-08-06 | builder hydration effect → prop-init + `key` remount; admin `Date.now()` → query `dataUpdatedAt`; api.ts dead assignment removed; empty interfaces → type aliases; cva variants unexported; `ClerkProviderWithRouter` extracted |
+| BUG-03 | Prettier drift (31 files) | P0 | ✅ 🧪 | `format:check` in CI | 2026-08-06 | `npm run format` applied; check now passes |
+| BUG-04 | mypy fails under CI invocation | P0 | ✅ 🧪 | `mypy .` per service in CI | 2026-08-06 | `src/__init__.py` + per-service `mypy.ini`; ci.yml runs from service dir; 3 real bugs mypy then surfaced also fixed (see Session 2) |
 | BUG-05 | "Use template" dead end | P2 | ⬜ | — | — | |
 | BUG-06 | Billing: dead UI buttons + portal placeholder | P3+P6 | ⬜ | — | — | split FE/BE |
 | BUG-07 | Dashboard hardcoded | P3 | ⬜ | — | — | |
@@ -59,13 +59,40 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 |---|---|---|---|
 | `apps/web`: `npx tsc --noEmit` | 2026-08-06 | ✅ clean | — |
 | `apps/web`: `npm run test` (vitest) | 2026-08-06 | ✅ 1/1 | — |
-| `apps/web`: `npm run lint` | 2026-08-06 | ❌ 5 errors, 3 warnings | BUG-02 |
-| `apps/web`: `npm run format:check` | 2026-08-06 | ❌ 31 files | BUG-03 |
+| `apps/web`: `npm run lint` | 2026-08-06 | ✅ clean (0 problems) | — |
+| `apps/web`: `npm run format:check` | 2026-08-06 | ✅ clean | — |
 | services: `pytest` (gateway, auth-service) | 2026-08-06 | ✅ passing* | *requires BUG-09 workaround |
-| services: `ruff check src` (gateway, auth-service) | 2026-08-06 | ✅ clean | — |
-| services: `mypy` (CI invocation) | 2026-08-06 | ❌ import errors | BUG-04 |
+| services: `ruff check src` (all 6) | 2026-08-06 | ✅ clean | — |
+| services: `mypy .` (per service dir) | 2026-08-06 | ✅ clean — all 6 services | — |
 | services: `pytest` (workflow/execution/billing/notification) | never | — | no local venvs yet; `make venv && make install` first |
+
 ## 3. Session log (newest first)
+
+### Session 2 — 2026-08-06 · branch `test-v2-30-7` · P0 (make CI green)
+- **Did:** fixed BUG-02, BUG-03, BUG-04 — CI gates are green locally.
+  - BUG-02: `workflow-builder.tsx` hydration `useEffect` removed — the page component
+    now owns `useWorkflow`, gates on loading, and mounts `<Builder key={workflowId}>`
+    which initializes state from props (also fixes canvas state surviving save→navigate);
+    `admin.tsx` render-time `Date.now()` replaced by the query's `dataUpdatedAt`;
+    `api.ts` dead assignment removed; `input.tsx`/`textarea.tsx` empty interfaces →
+    type aliases; `badge.tsx`/`button.tsx` stopped exporting unused cva variants;
+    `ClerkProviderWithRouter` moved out of `main.tsx` into `components/auth/`.
+  - BUG-03: `npm run format` (Prettier rewrote 31 files).
+  - BUG-04: added `src/__init__.py` + `mypy.ini` to all 6 services; `ci.yml` mypy step
+    now runs from each service dir. Enabling real mypy surfaced and fixed 3 genuine
+    bugs: gateway `http_client` possible-None guard (`main.py`), `engine.py`
+    response-None narrowing + missing `dependents` annotation. Migrated all 5 DB
+    services' `models.py` to SQLAlchemy 2.0 style (`DeclarativeBase`, `Mapped`,
+    `mapped_column`) and `db.py` to `async_sessionmaker` with a correct
+    `AsyncGenerator` return type on `get_db`.
+- **Evidence:** eslint 0 problems · format:check clean · tsc 0 errors · vitest 1/1 ·
+  ruff clean on all 6 services · mypy clean on all 6 services (auth 20 files, gateway 8,
+  workflow 16, execution 17, billing 14, notification 14) · pytest auth+gateway passing.
+- **Decisions:** D7, D8, D9.
+- **Note:** mypy for the 4 services without local venvs was cross-checked using
+  auth-service's mypy binary (`ignore_missing_imports` covers missing deps); CI
+  installs full deps and may type third-party calls more strictly.
+- **Next:** P1 — gateway webhook routing (BUG-01).
 
 ### Session 1 — 2026-08-06 · branch `test-v2-30-7` · docs only
 - **Did:** full-repo audit (read all 6 services + gateway + frontend; ran tsc/vitest/
@@ -87,6 +114,9 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 | D4 | 2026-07 (6c9ee47) | Frontend polls executions instead of SSE | `EventSource` can't send `Authorization` through the gateway |
 | D5 | 2026-07 (e1f95fe) | Admin rights from `ADMIN_EMAILS` env, not DB | No bootstrap problem; can't be escalated via app data |
 | D6 | 2026-08-06 | Track work with stable issue IDs across AUDIT/PLAN/PROGRESS | Unambiguous status across files and sessions |
+| D7 | 2026-08-06 | Models use SQLAlchemy 2.0 `DeclarativeBase` + `Mapped`/`mapped_column`; `db.py` uses `async_sessionmaker` | Lets mypy type-check models natively, no sqlalchemy plugin needed |
+| D8 | 2026-08-06 | mypy runs per-service from the service dir (`mypy.ini` + `src/__init__.py`); CI updated to match the Makefile | Both invocation styles previously failed (found-twice / import-not-found) |
+| D9 | 2026-08-06 | TanStack `dataUpdatedAt` is the render-safe "now" for expiry math | `Date.now()` in render trips react-hooks/purity |
 
 ## 5. Session memory — environment & conventions
 

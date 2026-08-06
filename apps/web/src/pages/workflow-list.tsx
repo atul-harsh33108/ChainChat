@@ -71,7 +71,8 @@ export function WorkflowListPage() {
                       <div className="flex items-center gap-2">
                         {wf.parent_id && (
                           <Badge variant="secondary">
-                            <GitFork className="h-3 w-3 mr-1" />Remix
+                            <GitFork className="h-3 w-3 mr-1" />
+                            Remix
                           </Badge>
                         )}
                         {version && <Badge variant="outline">v{version.version_number}</Badge>}

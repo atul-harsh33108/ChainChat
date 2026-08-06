@@ -1,5 +1,5 @@
-import * as React from "react"
-import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
+import * as React from 'react'
+import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
 
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 5000
@@ -19,10 +19,10 @@ function genId() {
 }
 
 const actionTypes = {
-  ADD_TOAST: "ADD_TOAST",
-  UPDATE_TOAST: "UPDATE_TOAST",
-  DISMISS_TOAST: "DISMISS_TOAST",
-  REMOVE_TOAST: "REMOVE_TOAST",
+  ADD_TOAST: 'ADD_TOAST',
+  UPDATE_TOAST: 'UPDATE_TOAST',
+  DISMISS_TOAST: 'DISMISS_TOAST',
+  REMOVE_TOAST: 'REMOVE_TOAST',
 } as const
 
 let memoryState: { toasts: ToasterToast[] } = { toasts: [] }
@@ -47,7 +47,9 @@ function reducer(
     case actionTypes.UPDATE_TOAST:
       return {
         ...state,
-        toasts: state.toasts.map((t) => (t.id === action.toast!.id ? { ...t, ...action.toast } : t)),
+        toasts: state.toasts.map((t) =>
+          t.id === action.toast!.id ? { ...t, ...action.toast } : t
+        ),
       }
     case actionTypes.DISMISS_TOAST:
       return {
@@ -69,10 +71,11 @@ function reducer(
   }
 }
 
-function toast({ ...props }: Omit<ToasterToast, "id">) {
+function toast({ ...props }: Omit<ToasterToast, 'id'>) {
   const id = genId()
 
-  const update = (props: ToasterToast) => dispatch({ type: actionTypes.UPDATE_TOAST, toast: { ...props, id } })
+  const update = (props: ToasterToast) =>
+    dispatch({ type: actionTypes.UPDATE_TOAST, toast: { ...props, id } })
   const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id })
 
   dispatch({

@@ -18,9 +18,18 @@ export function SettingsPage() {
 
       <Tabs defaultValue="general">
         <TabsList className="mb-6">
-          <TabsTrigger value="general"><Settings2 className="h-4 w-4 mr-2" />General</TabsTrigger>
-          <TabsTrigger value="members"><Users className="h-4 w-4 mr-2" />Members</TabsTrigger>
-          <TabsTrigger value="billing"><CreditCard className="h-4 w-4 mr-2" />Billing</TabsTrigger>
+          <TabsTrigger value="general">
+            <Settings2 className="h-4 w-4 mr-2" />
+            General
+          </TabsTrigger>
+          <TabsTrigger value="members">
+            <Users className="h-4 w-4 mr-2" />
+            Members
+          </TabsTrigger>
+          <TabsTrigger value="billing">
+            <CreditCard className="h-4 w-4 mr-2" />
+            Billing
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -56,9 +65,13 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Member management is handled through Clerk. Use the Clerk dashboard to invite users to this organization.
+                Member management is handled through Clerk. Use the Clerk dashboard to invite users
+                to this organization.
               </p>
-              <Button className="mt-4" onClick={() => alert('Open Clerk dashboard to invite members')}>
+              <Button
+                className="mt-4"
+                onClick={() => alert('Open Clerk dashboard to invite members')}
+              >
                 Invite members
               </Button>
             </CardContent>
@@ -76,7 +89,8 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Stripe billing is connected in production. In development, billing endpoints return placeholder data.
+                Stripe billing is connected in production. In development, billing endpoints return
+                placeholder data.
               </p>
               <div className="flex gap-2">
                 <Button>Upgrade to Pro</Button>

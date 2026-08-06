@@ -95,6 +95,9 @@ async def proxy(request: Request, path: str):
         headers["x-role"] = claims.get("org_role", "")
 
     body = await request.body()
+    if http_client is None:
+        # The lifespan handler always sets this before serving requests.
+        raise HTTPException(status_code=503, detail="Gateway is not ready")
     try:
         resp = await http_client.request(
             method=request.method,

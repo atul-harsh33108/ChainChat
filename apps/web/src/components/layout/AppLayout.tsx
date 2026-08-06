@@ -18,7 +18,11 @@ import { LayoutDashboard, FileText, Settings, ChevronDown, ShieldCheck, Crown } 
 export function AppLayout() {
   const { user } = useUser()
   const orgListResult = useOrganizationList()
-  const organizationList = (orgListResult as { organizationList?: { organization: { id: string; name: string }; role: string }[] }).organizationList
+  const organizationList = (
+    orgListResult as {
+      organizationList?: { organization: { id: string; name: string }; role: string }[]
+    }
+  ).organizationList
   const setActive = orgListResult.setActive
   const { organization } = useOrganization()
   const { workspaceId } = useParams()
@@ -56,14 +60,16 @@ export function AppLayout() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
-              {(organizationList || []).map((item: { organization: { id: string; name: string } }) => (
-                <DropdownMenuItem
-                  key={item.organization.id}
-                  onClick={() => setActive?.({ organization: item.organization.id })}
-                >
-                  {item.organization.name}
-                </DropdownMenuItem>
-              ))}
+              {(organizationList || []).map(
+                (item: { organization: { id: string; name: string } }) => (
+                  <DropdownMenuItem
+                    key={item.organization.id}
+                    onClick={() => setActive?.({ organization: item.organization.id })}
+                  >
+                    {item.organization.name}
+                  </DropdownMenuItem>
+                )
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link to="/app/settings">Create workspace</Link>
@@ -114,7 +120,8 @@ export function AppLayout() {
             </div>
             {me?.plan === 'pro' && (
               <Badge className="shrink-0">
-                <Crown className="h-3 w-3 mr-1" />Pro
+                <Crown className="h-3 w-3 mr-1" />
+                Pro
               </Badge>
             )}
           </div>

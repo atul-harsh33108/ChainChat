@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text, JSON, Boolean
+from sqlalchemy import String, DateTime, ForeignKey, Text, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 
 def utc_now():
@@ -16,37 +18,37 @@ class NotificationTemplate(Base):
     __tablename__ = "notification_templates"
     __table_args__ = {"schema": "notification"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, unique=True, nullable=False)
-    type = Column(String, nullable=False)
-    channel = Column(String, nullable=False, default="email")
-    subject = Column(String, nullable=True)
-    body_html = Column(Text, nullable=True)
-    body_text = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=utc_now)
-    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    type: Mapped[str] = mapped_column(String, nullable=False)
+    channel: Mapped[str] = mapped_column(String, nullable=False, default="email")
+    subject: Mapped[str | None] = mapped_column(String, nullable=True)
+    body_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+    body_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
-    notifications = relationship("Notification", back_populates="template")
+    notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="template")
 
 
 class Notification(Base):
     __tablename__ = "notifications"
     __table_args__ = {"schema": "notification"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    workspace_id = Column(UUID(as_uuid=True), nullable=True, index=True)
-    template_id = Column(UUID(as_uuid=True), ForeignKey("notification.notification_templates.id"), nullable=True)
-    type = Column(String, nullable=False)
-    channel = Column(String, nullable=False, default="in_app")
-    title = Column(String, nullable=True)
-    body = Column(Text, nullable=True)
-    status = Column(String, nullable=False, default="pending")
-    is_read = Column(Boolean, nullable=False, default=False)
-    data = Column(JSON, nullable=True)
-    sent_at = Column(DateTime(timezone=True), nullable=True)
-    read_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=utc_now)
-    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    template_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("notification.notification_templates.id"), nullable=True)
+    type: Mapped[str] = mapped_column(String, nullable=False)
+    channel: Mapped[str] = mapped_column(String, nullable=False, default="in_app")
+    title: Mapped[str | None] = mapped_column(String, nullable=True)
+    body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
-    template = relationship("NotificationTemplate", back_populates="notifications")
+    template: Mapped["NotificationTemplate | None"] = relationship("NotificationTemplate", back_populates="notifications")

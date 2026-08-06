@@ -31,9 +31,9 @@ function formatDate(value: string | null): string {
   return new Date(value).toLocaleString()
 }
 
-function daysLeft(value: string | null): number | null {
+function daysLeft(value: string | null, now: number): number | null {
   if (!value) return null
-  const ms = new Date(value).getTime() - Date.now()
+  const ms = new Date(value).getTime() - now
   return ms <= 0 ? 0 : Math.ceil(ms / (1000 * 60 * 60 * 24))
 }
 
@@ -41,7 +41,9 @@ export function AdminPage() {
   const { data: me, isLoading: meLoading } = useMe()
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
-  const { data: users, isLoading, isError, error } = useAdminUsers(query)
+  // dataUpdatedAt doubles as a pure 'now' for expiry math; Date.now() during
+  // render trips react-hooks/purity.
+  const { data: users, isLoading, isError, error, dataUpdatedAt } = useAdminUsers(query)
   const [selected, setSelected] = useState<AdminUser | null>(null)
 
   if (meLoading) {
@@ -76,9 +78,7 @@ export function AdminPage() {
         <ShieldCheck className="h-6 w-6" />
         <h1 className="text-2xl font-bold">Admin console</h1>
       </div>
-      <p className="text-muted-foreground mb-6">
-        Manage users and grant time-limited Pro access.
-      </p>
+      <p className="text-muted-foreground mb-6">Manage users and grant time-limited Pro access.</p>
 
       <form
         className="flex items-end gap-2 mb-6"
@@ -97,7 +97,8 @@ export function AdminPage() {
           />
         </div>
         <Button type="submit" variant="outline">
-          <Search className="h-4 w-4 mr-2" />Search
+          <Search className="h-4 w-4 mr-2" />
+          Search
         </Button>
       </form>
 
@@ -121,9 +122,8 @@ export function AdminPage() {
               key={user.clerk_id}
               user={user}
               expanded={selected?.clerk_id === user.clerk_id}
-              onToggle={() =>
-                setSelected(selected?.clerk_id === user.clerk_id ? null : user)
-              }
+              now={dataUpdatedAt}
+              onToggle={() => setSelected(selected?.clerk_id === user.clerk_id ? null : user)}
             />
           ))}
         </div>
@@ -141,10 +141,12 @@ export function AdminPage() {
 function UserRow({
   user,
   expanded,
+  now,
   onToggle,
 }: {
   user: AdminUser
   expanded: boolean
+  now: number
   onToggle: () => void
 }) {
   const [days, setDays] = useState('30')
@@ -153,7 +155,7 @@ function UserRow({
   const revoke = useRevokePro()
   const { data: grants } = useUserGrants(expanded ? user.clerk_id : undefined)
 
-  const remaining = daysLeft(user.pro_expires_at)
+  const remaining = daysLeft(user.pro_expires_at, now)
 
   const handleGrant = async () => {
     try {
@@ -196,16 +198,15 @@ function UserRow({
               {user.is_admin && <Badge variant="outline">Admin</Badge>}
               {user.plan === 'pro' ? (
                 <Badge>
-                  <Crown className="h-3 w-3 mr-1" />Pro
+                  <Crown className="h-3 w-3 mr-1" />
+                  Pro
                 </Badge>
               ) : (
                 <Badge variant="secondary">Free</Badge>
               )}
             </CardTitle>
             <CardDescription className="truncate">{user.email}</CardDescription>
-            <p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-              {user.clerk_id}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground font-mono truncate">{user.clerk_id}</p>
           </div>
           <div className="text-right shrink-0">
             {user.plan === 'pro' && (
@@ -234,7 +235,9 @@ function UserRow({
                 </SelectTrigger>
                 <SelectContent>
                   {DURATIONS.map((d) => (
-                    <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                    <SelectItem key={d.value} value={d.value}>
+                      {d.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -252,12 +255,9 @@ function UserRow({
               <Crown className="h-4 w-4 mr-2" />
               {user.plan === 'pro' ? 'Extend Pro' : 'Grant Pro'}
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleRevoke}
-              disabled={busy || user.plan !== 'pro'}
-            >
-              <XCircle className="h-4 w-4 mr-2" />Revoke
+            <Button variant="outline" onClick={handleRevoke} disabled={busy || user.plan !== 'pro'}>
+              <XCircle className="h-4 w-4 mr-2" />
+              Revoke
             </Button>
           </div>
 
@@ -267,7 +267,7 @@ function UserRow({
               <div className="space-y-1">
                 {grants.map((g) => {
                   const revoked = !!g.revoked_at
-                  const expired = new Date(g.expires_at).getTime() <= Date.now()
+                  const expired = new Date(g.expires_at).getTime() <= now
                   return (
                     <div
                       key={g.id}
