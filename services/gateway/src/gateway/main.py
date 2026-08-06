@@ -17,6 +17,7 @@ SERVICE_MAP = {
     "workspaces": settings.auth_service_url,
     "users": settings.auth_service_url,
     "admin": settings.auth_service_url,
+    "webhooks": settings.auth_service_url,
     "workflows": settings.workflow_service_url,
     "templates": settings.workflow_service_url,
     "executions": settings.execution_service_url,
@@ -84,7 +85,11 @@ async def proxy(request: Request, path: str):
     headers = dict(request.headers)
     headers.pop("host", None)
 
-    if not path.startswith("webhooks/"):
+    # Webhooks are unauthenticated by design: external providers (Clerk, Stripe)
+    # cannot hold a Clerk JWT. Match any path segment so both `webhooks/clerk`
+    # and `billing/webhooks/stripe` are reachable. Upstream services still
+    # verify the provider's own signature on these handlers.
+    if "webhooks" not in path.split("/"):
         auth_header = headers.get("authorization", "")
         if not auth_header.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Missing bearer token")

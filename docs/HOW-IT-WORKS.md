@@ -17,7 +17,7 @@ honest "ground truth" companion to the aspirational design docs.
 > save, run, and remix a prompt chain from the browser and watch it execute. The
 > **auth-service** persists users via just-in-time Clerk sync and hosts a working **admin
 > console** (user directory + time-limited Pro grants). Still placeholder or missing:
-> workspace CRUD, Clerk/Stripe webhooks (also unreachable through the gateway — §7.1),
+> workspace CRUD, Clerk/Stripe webhook handlers (routing fixed in P1; handlers still no-ops),
 > notification triggers, billing's subscription state machine, plan enforcement, and all
 > authorization (RBAC) checks.
 
@@ -350,10 +350,11 @@ sends the real `ExecutionCreate`), the ignored executions list filter (`chain_id
 supported), the camelCase/snake_case type mismatch, and `users/me` demo data (now a real
 JIT-synced row). Current seams (audit IDs in brackets — see `docs/audit/AUDIT.md`):
 
-1. **Webhooks are unreachable through the gateway [BUG-01].** `webhooks` is missing from
-   `SERVICE_MAP` → `POST /api/v1/webhooks/clerk` gets `404`. And the auth skip
-   (`path.startswith("webhooks/")`) doesn't match `billing/webhooks/stripe` → Stripe
-   gets `401`. Latent today because both handlers are no-ops.
+1. ~~**Webhooks are unreachable through the gateway [BUG-01]**~~ — **FIXED 2026-08-06
+   (P1):** `webhooks` was added to `SERVICE_MAP` and the auth skip now matches any
+   `webhooks` path segment; both webhook routes proxy without a token (covered by
+   `services/gateway/tests/test_proxy.py`). The webhook *handlers* are still no-ops —
+   see GAP-01/GAP-04.
 2. **"Use template" dead end [BUG-05].** The `?template=` param is never read; the
    working `POST /templates/{id}/apply` endpoint is never called.
 3. **Frontend placeholders [BUG-06, BUG-07, BUG-08].** Dead billing buttons, hardcoded
@@ -378,7 +379,7 @@ JIT-synced row). Current seams (audit IDs in brackets — see `docs/audit/AUDIT.
 | Capability | Design docs | Actual code |
 |---|---|---|
 | Gateway routing + JWT | Full Clerk JWKS verification | Real routing; JWKS verify **only if configured**, else unverified dev bypass |
-| User persistence | Clerk-webhook driven sync into DB | Real, via just-in-time sync on `users/me`; webhook is a no-op (and unroutable) |
+| User persistence | Clerk-webhook driven sync into DB | Real, via just-in-time sync on `users/me`; webhook handler is a no-op (routing fixed in P1) |
 | Workspace/membership persistence | Full | **Stubbed** (`[]` / demo workspace) |
 | Admin console | Not in original design | **Fully implemented** (user directory, time-limited Pro grants, audit log) |
 | Workflow CRUD / versions / fork / templates | Full | **Fully implemented** (no publish/unpublish or template-create endpoints) |

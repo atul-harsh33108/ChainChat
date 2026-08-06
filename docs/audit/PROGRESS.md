@@ -16,7 +16,7 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 
 | ID | Issue | Phase | Status | Automated test | Manual verify | Notes |
 |---|---|---|---|---|---|---|
-| BUG-01 | Gateway webhook routing (Clerk 404, Stripe 401) | P1 | ⬜ | — | — | |
+| BUG-01 | Gateway webhook routing (Clerk 404, Stripe 401) | P1 | ✅ 🧪 | `gateway/tests/test_proxy.py` (6 tests) | 2026-08-06 | `webhooks` added to SERVICE_MAP; auth skip matches any `webhooks` segment |
 | BUG-02 | ESLint errors (5) + warnings (3) | P0 | ✅ 🧪 | `npm run lint` in CI | 2026-08-06 | builder hydration effect → prop-init + `key` remount; admin `Date.now()` → query `dataUpdatedAt`; api.ts dead assignment removed; empty interfaces → type aliases; cva variants unexported; `ClerkProviderWithRouter` extracted |
 | BUG-03 | Prettier drift (31 files) | P0 | ✅ 🧪 | `format:check` in CI | 2026-08-06 | `npm run format` applied; check now passes |
 | BUG-04 | mypy fails under CI invocation | P0 | ✅ 🧪 | `mypy .` per service in CI | 2026-08-06 | `src/__init__.py` + per-service `mypy.ini`; ci.yml runs from service dir; 3 real bugs mypy then surfaced also fixed (see Session 2) |
@@ -61,12 +61,24 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 | `apps/web`: `npm run test` (vitest) | 2026-08-06 | ✅ 1/1 | — |
 | `apps/web`: `npm run lint` | 2026-08-06 | ✅ clean (0 problems) | — |
 | `apps/web`: `npm run format:check` | 2026-08-06 | ✅ clean | — |
-| services: `pytest` (gateway, auth-service) | 2026-08-06 | ✅ passing* | *requires BUG-09 workaround |
+| services: `pytest` (gateway, auth-service) | 2026-08-06 | ✅ 8 passing (gateway 7 incl. new proxy suite, auth 1)* | *requires BUG-09 workaround |
 | services: `ruff check src` (all 6) | 2026-08-06 | ✅ clean | — |
 | services: `mypy .` (per service dir) | 2026-08-06 | ✅ clean — all 6 services | — |
 | services: `pytest` (workflow/execution/billing/notification) | never | — | no local venvs yet; `make venv && make install` first |
 
 ## 3. Session log (newest first)
+
+### Session 3 — 2026-08-06 · branch `test-v2-30-7` · P1 (webhook routing)
+- **Did:** fixed BUG-01 — added `"webhooks"` to the gateway `SERVICE_MAP` (routes to
+  auth-service) and changed the auth skip from `path.startswith("webhooks/")` to a
+  segment match so `billing/webhooks/stripe` is also unauthenticated-proxied. Added
+  `services/gateway/tests/test_proxy.py` (6 tests: Clerk webhook, Stripe webhook,
+  identity headers, 401/404/503 paths) with mocked upstream via `httpx.MockTransport`.
+  Modernized gateway `test_health.py` to `ASGITransport` (other services still use the
+  deprecated `app=` shortcut — clean up when their venvs exist; see §5).
+- **Evidence:** gateway pytest 7/7 ✅ · ruff clean (src+tests) ✅ · mypy clean (9 files) ✅.
+- **Docs:** HOW-IT-WORKS §3/§7.1/§8/TL;DR updated to reflect the fix.
+- **Next:** P2 — templates end-to-end (BUG-05, FEAT-06) or P3 (frontend honesty pass).
 
 ### Session 2 — 2026-08-06 · branch `test-v2-30-7` · P0 (make CI green)
 - **Did:** fixed BUG-02, BUG-03, BUG-04 — CI gates are green locally.
