@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import type { ExecutionStatus, StepStatus } from '@/types'
 import { classifyInputValue, hasNoInputs } from '@/lib/input-payload-display'
+import { StepOutputPanel } from '@/components/workflow/step-output-panel'
 
 export function WorkflowRunsPage() {
   const { workspaceId, workflowId } = useParams()
@@ -95,7 +96,11 @@ export function WorkflowRunsPage() {
                         Skipped: its branch condition was not met.
                       </p>
                     )}
-                    <StepOutputView outputs={step.outputs} format={step.format} />
+                    <StepOutputPanel
+                      stepKey={step.step_key}
+                      outputs={step.outputs}
+                      format={step.format}
+                    />
                     {step.error_message && (
                       <p className="mt-1 text-xs text-destructive">{step.error_message}</p>
                     )}
@@ -115,39 +120,6 @@ export function WorkflowRunsPage() {
         </Card>
       )}
     </div>
-  )
-}
-
-/** Renders a step's outputs per its display format: JSON gets a monospace
- * `<pre>` block (falling back to the raw text plus a parse-error note if the
- * upstream text wasn't valid JSON), everything else -- including markdown,
- * which is left as raw text rather than rendered, since sanitizing
- * untrusted HTML output is a larger scope than this step -- gets the plain
- * whitespace-preserving treatment used before format steps existed. */
-function StepOutputView({
-  outputs,
-  format,
-}: {
-  outputs: { text?: string; json?: unknown; format_error?: string } | null
-  format: string | null
-}) {
-  if (!outputs) return null
-
-  if (format === 'json' && outputs.json !== undefined) {
-    return (
-      <pre className="mt-1 text-xs whitespace-pre-wrap rounded bg-muted p-2">
-        {JSON.stringify(outputs.json, null, 2)}
-      </pre>
-    )
-  }
-
-  return (
-    <>
-      {outputs.format_error && (
-        <p className="mt-1 text-xs text-amber-600">{outputs.format_error}</p>
-      )}
-      {outputs.text && <p className="mt-1 text-sm whitespace-pre-wrap">{outputs.text}</p>}
-    </>
   )
 }
 

@@ -62,6 +62,7 @@ import { getRunInputs } from '@/lib/run-inputs'
 import { RunInputEditor } from '@/components/workflow/run-input-editor'
 import { VariablePicker } from '@/components/workflow/variable-picker'
 import { EdgeConditionEditor } from '@/components/workflow/edge-condition-editor'
+import { StepOutputPanel } from '@/components/workflow/step-output-panel'
 import { RunDialog } from '@/components/workflow/run-dialog'
 import { Play, Save, GitFork, ArrowLeft, History, Trash2 } from 'lucide-react'
 
@@ -599,22 +600,11 @@ function Builder({ existing }: { existing: Workflow | null }) {
                         {s.status === 'skipped' ? <span className="italic">skipped</span> : s.status}
                       </span>
                     </div>
-                    {s.format === 'json' && s.outputs?.json !== undefined ? (
-                      <pre className="mt-1 text-xs whitespace-pre-wrap rounded bg-muted p-2">
-                        {JSON.stringify(s.outputs.json, null, 2)}
-                      </pre>
-                    ) : (
-                      <>
-                        {s.outputs?.format_error && (
-                          <p className="mt-1 text-xs text-amber-600">{s.outputs.format_error}</p>
-                        )}
-                        {s.outputs?.text && (
-                          <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">
-                            {s.outputs.text}
-                          </p>
-                        )}
-                      </>
-                    )}
+                    <StepOutputPanel
+                      stepKey={s.step_key}
+                      outputs={s.outputs}
+                      format={s.format}
+                    />
                     {s.error_message && (
                       <p className="mt-1 text-xs text-destructive">{s.error_message}</p>
                     )}
