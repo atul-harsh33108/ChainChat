@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import type { GraphNode, NodeConfig, NodeType, Workflow, WorkflowGraph } from '@/types'
+import type { EdgeCondition, GraphNode, NodeConfig, NodeType, Workflow, WorkflowGraph } from '@/types'
 import {
   DEFAULT_MODEL,
   FREE_MODELS,
@@ -48,10 +48,12 @@ import {
   latestVersion,
   executableAncestors,
   stepReferenceKey,
+  decisionSourceStepKey,
 } from '@/lib/graph'
 import { getRunInputs } from '@/lib/run-inputs'
 import { RunInputEditor } from '@/components/workflow/run-input-editor'
 import { VariablePicker } from '@/components/workflow/variable-picker'
+import { EdgeConditionEditor } from '@/components/workflow/edge-condition-editor'
 import { RunDialog } from '@/components/workflow/run-dialog'
 import { Play, Save, GitFork, ArrowLeft, History, Trash2 } from 'lucide-react'
 
@@ -60,6 +62,12 @@ interface NodeData {
   label: string
   nodeType: NodeType
   config: NodeConfig
+}
+
+/** React Flow edge data carried in the canvas. Only meaningful when the
+ * edge's source is a Decision node. */
+interface EdgeData {
+  condition?: EdgeCondition
 }
 
 function reactFlowType(type: NodeType): string {
@@ -85,12 +93,13 @@ function toFlowNodes(graph: WorkflowGraph): Node<NodeData>[] {
   }))
 }
 
-function toFlowEdges(graph: WorkflowGraph): Edge[] {
+function toFlowEdges(graph: WorkflowGraph): Edge<EdgeData>[] {
   return (graph.edges || []).map((e) => ({
     id: e.id,
     source: e.source,
     target: e.target,
     label: e.label,
+    data: { condition: e.condition },
   }))
 }
 
@@ -115,8 +124,11 @@ function Builder({ existing }: { existing: Workflow | null }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeData>(
     toFlowNodes(initialGraph(existing))
   )
-  const [edges, setEdges, onEdgesChange] = useEdgesState(toFlowEdges(initialGraph(existing)))
+  const [edges, setEdges, onEdgesChange] = useEdgesState<EdgeData>(
+    toFlowEdges(initialGraph(existing))
+  )
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [runId, setRunId] = useState<string | null>(null)
   const [pendingRun, setPendingRun] = useState<{
     workflowId: string
@@ -167,6 +179,27 @@ function Builder({ existing }: { existing: Workflow | null }) {
     [nodes, selectedId]
   )
 
+  const selectedEdge = useMemo(
+    () => (edges as Edge<EdgeData>[]).find((e) => e.id === selectedEdgeId) || null,
+    [edges, selectedEdgeId]
+  )
+
+  /** The Decision node feeding `selectedEdge`, if any -- edges leaving any
+   * other node type have no condition to edit. */
+  const selectedEdgeSourceNode = useMemo(() => {
+    if (!selectedEdge) return null
+    return (nodes as Node<NodeData>[]).find((n) => n.id === selectedEdge.source) || null
+  }, [selectedEdge, nodes])
+
+  const updateSelectedEdgeCondition = (condition: EdgeCondition | undefined) => {
+    if (!selectedEdgeId) return
+    setEdges((prev) =>
+      (prev as Edge<EdgeData>[]).map((e) =>
+        e.id === selectedEdgeId ? { ...e, data: { ...e.data, condition } } : e
+      )
+    )
+  }
+
   const updateSelected = (patch: Partial<NodeData>) => {
     if (!selectedId) return
     setNodes((prev) =>
@@ -186,6 +219,12 @@ function Builder({ existing }: { existing: Workflow | null }) {
     setSelectedId(null)
   }
 
+  const deleteSelectedEdge = () => {
+    if (!selectedEdgeId) return
+    setEdges((prev) => prev.filter((e) => e.id !== selectedEdgeId))
+    setSelectedEdgeId(null)
+  }
+
   const buildGraph = useCallback((): WorkflowGraph => {
     const graphNodes: GraphNode[] = (nodes as Node<NodeData>[]).map((n) => ({
       id: n.id,
@@ -194,11 +233,12 @@ function Builder({ existing }: { existing: Workflow | null }) {
       position: n.position,
       config: n.data.config,
     }))
-    const graphEdges = (edges as Edge[]).map((e) => ({
+    const graphEdges = (edges as Edge<EdgeData>[]).map((e) => ({
       id: e.id,
       source: e.source,
       target: e.target,
       label: typeof e.label === 'string' ? e.label : undefined,
+      condition: e.data?.condition,
     }))
     return { nodes: graphNodes, edges: graphEdges }
   }, [nodes, edges])
@@ -345,8 +385,18 @@ function Builder({ existing }: { existing: Workflow | null }) {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onNodeClick={(_, node) => setSelectedId(node.id)}
-            onPaneClick={() => setSelectedId(null)}
+            onNodeClick={(_, node) => {
+              setSelectedEdgeId(null)
+              setSelectedId(node.id)
+            }}
+            onEdgeClick={(_, edge) => {
+              setSelectedId(null)
+              setSelectedEdgeId(edge.id)
+            }}
+            onPaneClick={() => {
+              setSelectedId(null)
+              setSelectedEdgeId(null)
+            }}
             fitView
           >
             <Background />
@@ -374,7 +424,34 @@ function Builder({ existing }: { existing: Workflow | null }) {
 
           <Separator className="my-4" />
 
-          {selected ? (
+          {selectedEdge ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold">Edge</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={deleteSelectedEdge}
+                  aria-label="Delete edge"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {selectedEdgeSourceNode?.data.nodeType === 'decision' ? (
+                <EdgeConditionEditor
+                  condition={selectedEdge.data?.condition}
+                  sourceStepKey={decisionSourceStepKey(buildGraph(), selectedEdge.source)}
+                  onChange={updateSelectedEdgeCondition}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Only edges leaving a Decision node can carry a branch condition. This
+                  edge always runs.
+                </p>
+              )}
+            </div>
+          ) : selected ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">Node</h2>
@@ -480,10 +557,15 @@ function Builder({ existing }: { existing: Workflow | null }) {
               </h2>
               <div className="space-y-2">
                 {run.steps.map((s) => (
-                  <div key={s.step_key} className="rounded border p-2">
+                  <div
+                    key={s.step_key}
+                    className={`rounded border p-2 ${s.status === 'skipped' ? 'opacity-60' : ''}`}
+                  >
                     <div className="flex items-center justify-between text-sm font-medium">
                       <span className="truncate">{s.step_key}</span>
-                      <span className="text-muted-foreground">{s.status}</span>
+                      <span className="text-muted-foreground">
+                        {s.status === 'skipped' ? <span className="italic">skipped</span> : s.status}
+                      </span>
                     </div>
                     {s.outputs?.text && (
                       <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">

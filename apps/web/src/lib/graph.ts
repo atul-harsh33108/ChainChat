@@ -1,4 +1,4 @@
-import type { GraphEdge, GraphNode, WorkflowGraph } from '@/types'
+import type { EdgeConditionOp, GraphEdge, GraphNode, WorkflowGraph } from '@/types'
 import { getRunInputs, RUN_INPUT_KEY_PATTERN } from '@/lib/run-inputs'
 
 export const FREE_MODELS = [
@@ -25,9 +25,19 @@ export function toStepKey(nodeId: string): string {
   return /^[A-Za-z_]/.test(cleaned) ? cleaned : `n_${cleaned}`
 }
 
+/** A single AND-ed gate on a step, resolved from a Decision_Node's outgoing
+ * edge condition. `source_step` is always an executable Step_Reference_Key,
+ * never a Decision_Node id -- the engine only knows about steps. */
+export interface StepConditionPayload {
+  source_step: string
+  op: EdgeConditionOp
+  value?: string
+}
+
 export interface ExecutionStepPayload {
   step_key: string
   depends_on: string[]
+  conditions: StepConditionPayload[]
   provider: string
   model_key: string
   prompt: string
@@ -53,6 +63,20 @@ function buildIncoming(
   for (const e of (graph.edges || []) as GraphEdge[]) {
     if (!byId.has(e.source) || !byId.has(e.target)) continue
     incoming.set(e.target, [...(incoming.get(e.target) || []), e.source])
+  }
+  return incoming
+}
+
+/** Incoming-edges-per-node map for a graph, keeping the full edge (needed
+ * for `condition`), unlike `buildIncoming` which only keeps the source id. */
+function buildIncomingEdges(
+  graph: WorkflowGraph,
+  byId: Map<string, GraphNode>
+): Map<string, GraphEdge[]> {
+  const incoming = new Map<string, GraphEdge[]>()
+  for (const e of (graph.edges || []) as GraphEdge[]) {
+    if (!byId.has(e.source) || !byId.has(e.target)) continue
+    incoming.set(e.target, [...(incoming.get(e.target) || []), e])
   }
   return incoming
 }
@@ -94,6 +118,78 @@ export function executableAncestors(graph: WorkflowGraph, nodeId: string): strin
 export function stepReferenceKey(node: GraphNode): string {
   const custom = node.config?.stepKey?.trim()
   return custom ? custom : toStepKey(node.id)
+}
+
+/**
+ * The single Prompt_Node ancestor whose output a Decision_Node's branch
+ * conditions are evaluated against, or `undefined` if the decision has zero
+ * or more than one upstream Prompt_Node (ambiguous -- reported as a
+ * validation error by `graphToSteps` rather than guessed at).
+ */
+export function decisionSourceStepKey(
+  graph: WorkflowGraph,
+  decisionNodeId: string
+): string | undefined {
+  const ancestors = executableAncestors(graph, decisionNodeId)
+  if (ancestors.length !== 1) return undefined
+  const byId = buildById(graph)
+  return stepReferenceKey(byId.get(ancestors[0])!)
+}
+
+/**
+ * Branch conditions gating `nodeId`'s execution, collected by walking the
+ * same upstream, non-executable-node BFS as `executableAncestors`. Every
+ * Decision_Node edge traversed on the way -- including through nested
+ * decisions -- contributes one AND-ed condition, evaluated against the
+ * decision's own single Prompt_Node ancestor. Traversal (like
+ * `executableAncestors`) stops upstream of the first executable ancestor
+ * reached on each path: that node's own gating is its own concern, not
+ * `nodeId`'s.
+ */
+export function conditionsForNode(
+  graph: WorkflowGraph,
+  nodeId: string
+): StepConditionPayload[] {
+  const byId = buildById(graph)
+  const incomingEdges = buildIncomingEdges(graph, byId)
+
+  const conditions: StepConditionPayload[] = []
+  const seenConditionKeys = new Set<string>()
+  const seen = new Set<string>([nodeId])
+  const queue = [nodeId]
+
+  while (queue.length) {
+    const current = queue.shift()!
+    for (const edge of incomingEdges.get(current) || []) {
+      const srcNode = byId.get(edge.source)
+      if (!srcNode) continue
+
+      if (srcNode.type === 'decision' && edge.condition) {
+        const sourceStep = decisionSourceStepKey(graph, edge.source)
+        if (sourceStep) {
+          const payload: StepConditionPayload = {
+            source_step: sourceStep,
+            op: edge.condition.op,
+            value: edge.condition.value,
+          }
+          const dedupeKey = `${payload.source_step}|${payload.op}|${payload.value ?? ''}`
+          if (!seenConditionKeys.has(dedupeKey)) {
+            seenConditionKeys.add(dedupeKey)
+            conditions.push(payload)
+          }
+        }
+      }
+
+      if (isExecutable(srcNode)) continue // its own deps/gating are handled by its own step
+
+      if (!seen.has(edge.source)) {
+        seen.add(edge.source)
+        queue.push(edge.source)
+      }
+    }
+  }
+
+  return conditions
 }
 
 const IDENT_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/
@@ -177,12 +273,35 @@ export function graphToSteps(graph: WorkflowGraph): BuildResult {
       depends_on: executableAncestors(graph, node.id).map((id) =>
         stepReferenceKey(byId.get(id)!)
       ),
+      conditions: conditionsForNode(graph, node.id),
       provider: PROVIDER,
       model_key: node.config?.model || DEFAULT_MODEL,
       prompt,
       inputs: {},
     }
   })
+
+  // Decision-node well-formedness: a Decision_Node must have exactly one
+  // upstream Prompt_Node to evaluate conditions against (Req: decision
+  // branching). Zero means nothing to branch on; more than one is ambiguous
+  // about which output the condition refers to.
+  for (const node of nodes.filter((n) => n.type === 'decision')) {
+    const ancestors = executableAncestors(graph, node.id)
+    if (ancestors.length !== 1) {
+      errors.push(
+        `Decision node "${node.label || node.id}" must have exactly one upstream ` +
+          `Prompt node to branch on (found ${ancestors.length}).`
+      )
+    }
+    const outgoingConditioned = (graph.edges || []).some(
+      (e) => e.source === node.id && e.condition
+    )
+    if (!outgoingConditioned) {
+      errors.push(
+        `Decision node "${node.label || node.id}" has no condition set on any outgoing edge.`
+      )
+    }
+  }
 
   // Duplicate keys would violate the (execution_id, step_key) unique constraint.
   const keys = steps.map((s) => s.step_key)

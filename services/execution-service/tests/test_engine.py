@@ -57,3 +57,137 @@ async def test_run_step_with_retries_prefers_input_payload_over_upstream_output(
     rendered = fake_provider.complete.call_args.args[0]
     assert rendered == "input_value"
     assert outputs == {"text": "ok"}
+
+
+# --- Decision-node branching (GAP-08) ---------------------------------------
+#
+# Covers `_condition_met`, `_step_should_be_skipped`, and the `_mark_step_status`
+# "skipped" terminal-status handling used by `run_execution`'s per-step gate.
+
+from src.execution_service.engine import (
+    _condition_met,
+    _mark_step_status,
+    _step_should_be_skipped,
+)
+
+
+class TestConditionMet:
+    def test_contains_matches_case_insensitive_substring(self):
+        upstream = {"extract": {"text": "This is Urgent news"}}
+        condition = {"source_step": "extract", "op": "contains", "value": "urgent"}
+        assert _condition_met(condition, upstream, set()) is True
+
+    def test_contains_no_match_returns_false(self):
+        upstream = {"extract": {"text": "This is routine news"}}
+        condition = {"source_step": "extract", "op": "contains", "value": "urgent"}
+        assert _condition_met(condition, upstream, set()) is False
+
+    def test_equals_matches_after_trimming_whitespace(self):
+        upstream = {"classify": {"text": "  positive  \n"}}
+        condition = {"source_step": "classify", "op": "equals", "value": "positive"}
+        assert _condition_met(condition, upstream, set()) is True
+
+    def test_equals_mismatch_returns_false(self):
+        upstream = {"classify": {"text": "negative"}}
+        condition = {"source_step": "classify", "op": "equals", "value": "positive"}
+        assert _condition_met(condition, upstream, set()) is False
+
+    def test_not_empty_true_for_non_blank_text(self):
+        upstream = {"summarize": {"text": "some summary"}}
+        condition = {"source_step": "summarize", "op": "not_empty"}
+        assert _condition_met(condition, upstream, set()) is True
+
+    def test_not_empty_false_for_blank_text(self):
+        upstream = {"summarize": {"text": "   "}}
+        condition = {"source_step": "summarize", "op": "not_empty"}
+        assert _condition_met(condition, upstream, set()) is False
+
+    def test_unknown_op_returns_false(self):
+        upstream = {"extract": {"text": "anything"}}
+        condition = {"source_step": "extract", "op": "regex", "value": ".*"}
+        assert _condition_met(condition, upstream, set()) is False
+
+    def test_missing_source_step_returns_false(self):
+        condition = {"op": "not_empty"}
+        assert _condition_met(condition, {}, set()) is False
+
+    def test_source_step_in_skipped_keys_returns_false(self):
+        """A condition can never be met against a step that was itself
+        skipped, so downstream branches cascade-skip instead of evaluating
+        against a non-existent output."""
+        upstream = {"extract": {}}
+        condition = {"source_step": "extract", "op": "not_empty"}
+        assert _condition_met(condition, upstream, {"extract"}) is False
+
+
+class TestStepShouldBeSkipped:
+    def _step(self, depends_on=None, conditions=None):
+        return ExecutionStep(
+            id=uuid.uuid4(),
+            execution_id=uuid.uuid4(),
+            step_key="step_b",
+            depends_on=depends_on or [],
+            conditions=conditions or [],
+            provider="openrouter",
+            model_key="google/gemma-4-31b-it:free",
+            prompt="{extract}",
+        )
+
+    def test_no_conditions_and_no_skipped_deps_runs(self):
+        step = self._step(depends_on=["extract"])
+        upstream = {"extract": {"text": "urgent issue"}}
+        assert _step_should_be_skipped(step, upstream, set()) is False
+
+    def test_cascades_skip_when_a_dependency_was_skipped(self):
+        step = self._step(depends_on=["extract"])
+        assert _step_should_be_skipped(step, {}, {"extract"}) is True
+
+    def test_skipped_when_condition_not_met(self):
+        step = self._step(
+            depends_on=["extract"],
+            conditions=[{"source_step": "extract", "op": "contains", "value": "urgent"}],
+        )
+        upstream = {"extract": {"text": "routine update"}}
+        assert _step_should_be_skipped(step, upstream, set()) is True
+
+    def test_runs_when_condition_met(self):
+        step = self._step(
+            depends_on=["extract"],
+            conditions=[{"source_step": "extract", "op": "contains", "value": "urgent"}],
+        )
+        upstream = {"extract": {"text": "urgent issue"}}
+        assert _step_should_be_skipped(step, upstream, set()) is False
+
+    def test_multiple_conditions_are_and_ed(self):
+        step = self._step(
+            depends_on=["extract"],
+            conditions=[
+                {"source_step": "extract", "op": "contains", "value": "urgent"},
+                {"source_step": "extract", "op": "not_empty"},
+            ],
+        )
+        # Second condition (not_empty) passes but first (contains) fails.
+        upstream = {"extract": {"text": "routine update"}}
+        assert _step_should_be_skipped(step, upstream, set()) is True
+
+
+@pytest.mark.asyncio
+async def test_mark_step_status_skipped_sets_completed_at():
+    """'skipped' is a terminal status like 'completed'/'failed': it must set
+    completed_at so run duration/ordering logic treats it as finished."""
+    step = ExecutionStep(
+        id=uuid.uuid4(),
+        execution_id=uuid.uuid4(),
+        step_key="step_c",
+        depends_on=[],
+        provider="openrouter",
+        model_key="google/gemma-4-31b-it:free",
+    )
+    session = AsyncMock()
+    session.commit = AsyncMock()
+
+    await _mark_step_status(session, step, "skipped", outputs={})
+
+    assert step.status == "skipped"
+    assert step.outputs == {}
+    assert step.completed_at is not None

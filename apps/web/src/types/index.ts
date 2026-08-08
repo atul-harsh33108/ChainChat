@@ -96,11 +96,28 @@ export interface GraphNode {
   config?: NodeConfig
 }
 
+/** Op supported by the execution engine's condition evaluator (services/execution-service). */
+export type EdgeConditionOp = 'contains' | 'equals' | 'not_empty'
+
+/**
+ * A branch condition on an edge leaving a Decision_Node. Evaluated against
+ * the rendered text output of `sourceStep` (an upstream Prompt node's
+ * Step_Reference_Key, resolved at compile time by `graphToSteps`). Absent on
+ * edges that aren't leaving a decision node -- those are unconditional.
+ */
+export interface EdgeCondition {
+  op: EdgeConditionOp
+  /** Required for 'contains' and 'equals'; unused for 'not_empty'. */
+  value?: string
+}
+
 export interface GraphEdge {
   id: string
   source: string
   target: string
   label?: string
+  /** Only meaningful when `source` is a Decision_Node. */
+  condition?: EdgeCondition
 }
 
 /** Stored verbatim in WorkflowVersion.graph (JSONB) on the backend. */
@@ -140,7 +157,7 @@ export interface Workflow {
   versions: WorkflowVersion[]
 }
 
-export type StepStatus = 'pending' | 'running' | 'completed' | 'failed'
+export type StepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped'
 export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 export interface ExecutionStep {
@@ -148,6 +165,7 @@ export interface ExecutionStep {
   execution_id: string
   step_key: string
   depends_on: string[]
+  conditions: { source_step: string; op: EdgeConditionOp; value?: string }[] | null
   provider: string
   model_key: string
   prompt: string | null

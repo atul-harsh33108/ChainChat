@@ -51,10 +51,63 @@ async def _mark_step_status(
     now = datetime.now(timezone.utc)
     if status == "running" and step.started_at is None:
         step.started_at = now
-    if status in ("completed", "failed"):
+    if status in ("completed", "failed", "skipped"):
         step.completed_at = now
 
     await session.commit()
+
+
+def _extract_output_text(outputs: dict[str, Any] | None) -> str:
+    """Best-effort text extraction from a step's ``outputs`` for condition checks."""
+    if not outputs:
+        return ""
+    if isinstance(outputs, dict) and "text" in outputs:
+        return str(outputs["text"])
+    return str(outputs)
+
+
+def _condition_met(
+    condition: dict[str, Any],
+    upstream_outputs: dict[str, Any],
+    skipped_keys: set[str],
+) -> bool:
+    """Evaluate a single decision-edge condition against an upstream step's output.
+
+    Supported ops: ``contains`` (case-insensitive substring), ``equals``
+    (exact match, whitespace-trimmed), ``not_empty``. A condition whose
+    ``source_step`` was itself skipped is never met, so branches downstream
+    of a skipped decision cascade-skip rather than evaluating against a
+    non-existent output.
+    """
+    source = condition.get("source_step")
+    if not source or source in skipped_keys:
+        return False
+
+    text = _extract_output_text(upstream_outputs.get(source))
+    op = condition.get("op")
+
+    if op == "contains":
+        return str(condition.get("value", "")).lower() in text.lower()
+    if op == "equals":
+        return text.strip() == str(condition.get("value", "")).strip()
+    if op == "not_empty":
+        return bool(text.strip())
+
+    logger.warning("unknown_condition_op", op=op, source_step=source)
+    return False
+
+
+def _step_should_be_skipped(
+    step: ExecutionStep,
+    upstream_outputs: dict[str, Any],
+    skipped_keys: set[str],
+) -> bool:
+    """A step is skipped if any of its dependencies were skipped (cascade), or
+    if it has conditions and at least one of them (AND-ed) is not met."""
+    if any(dep in skipped_keys for dep in (step.depends_on or [])):
+        return True
+    conditions = step.conditions or []
+    return any(not _condition_met(c, upstream_outputs, skipped_keys) for c in conditions)
 
 
 async def _check_cancelled(session: AsyncSession, execution: Execution) -> bool:
@@ -197,11 +250,25 @@ async def run_execution(execution_id: Any, max_retries: int = 2) -> None:
         upstream_outputs: dict[str, Any] = {}
         context: dict[str, Any] = dict(input_payload)  # preserves existing output_payload shape
 
+        skipped_keys: set[str] = set()
+
         try:
             ordered = await _topological_steps(list(execution.steps))
             for step in ordered:
                 if await _check_cancelled(session, execution):
                     raise ExecutionCancelledError()
+
+                if _step_should_be_skipped(step, upstream_outputs, skipped_keys):
+                    logger.info(
+                        "step_skipped",
+                        execution_id=str(execution.id),
+                        step_key=step.step_key,
+                    )
+                    skipped_keys.add(step.step_key)
+                    await _mark_step_status(session, step, "skipped", outputs={})
+                    upstream_outputs[step.step_key] = {}
+                    context[step.step_key] = {}
+                    continue
 
                 outputs = await _run_step_with_retries(
                     session,

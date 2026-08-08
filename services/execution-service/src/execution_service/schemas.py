@@ -10,6 +10,11 @@ from src.execution_service.ids import to_uuid
 class ExecutionStepCreate(BaseModel):
     step_key: str
     depends_on: list[str] = Field(default_factory=list)
+    # Each entry gates this step on a decision made about an upstream step's
+    # output, e.g. {"source_step": "extract", "op": "contains", "value": "urgent"}.
+    # All entries must evaluate true (AND) for the step to run; otherwise it -
+    # and anything depending solely on it - is marked "skipped" rather than run.
+    conditions: list[dict[str, Any]] = Field(default_factory=list)
     provider: str
     model_key: str
     prompt: str | None = None
@@ -34,6 +39,7 @@ class ExecutionStepRead(BaseModel):
     execution_id: UUID
     step_key: str
     depends_on: list[str]
+    conditions: list[dict[str, Any]] | None
     provider: str
     model_key: str
     prompt: str | None

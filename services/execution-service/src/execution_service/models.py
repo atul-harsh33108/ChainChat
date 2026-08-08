@@ -50,6 +50,7 @@ class ExecutionStep(Base):
     execution_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("execution.executions.id"), nullable=False, index=True)
     step_key: Mapped[str] = mapped_column(String, nullable=False)
     depends_on: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    conditions: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
     provider: Mapped[str] = mapped_column(String, nullable=False)
     model_key: Mapped[str] = mapped_column(String, nullable=False)
     prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
