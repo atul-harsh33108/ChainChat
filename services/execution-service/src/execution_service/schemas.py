@@ -15,6 +15,11 @@ class ExecutionStepCreate(BaseModel):
     # All entries must evaluate true (AND) for the step to run; otherwise it -
     # and anything depending solely on it - is marked "skipped" rather than run.
     conditions: list[dict[str, Any]] = Field(default_factory=list)
+    # "prompt" (default): calls an AI provider. "format": reformats a single
+    # upstream step's output (Output_Node); no provider is called.
+    step_type: str = "prompt"
+    # Only meaningful when step_type == "format": "text" | "markdown" | "json".
+    format: str | None = None
     provider: str
     model_key: str
     prompt: str | None = None
@@ -40,6 +45,8 @@ class ExecutionStepRead(BaseModel):
     step_key: str
     depends_on: list[str]
     conditions: list[dict[str, Any]] | None
+    step_type: str
+    format: str | None
     provider: str
     model_key: str
     prompt: str | None

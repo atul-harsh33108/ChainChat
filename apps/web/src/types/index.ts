@@ -77,6 +77,10 @@ export interface RunInputDef {
   options?: string[] // required + 1..100 unique entries iff fieldType === 'select'
 }
 
+/** How an Output_Node's engine step reformats its single upstream
+ * dependency's text (services/execution-service's ``format`` step field). */
+export type OutputDisplayFormat = 'text' | 'markdown' | 'json'
+
 export interface NodeConfig {
   /** OpenRouter model id, e.g. "google/gemma-4-31b-it:free". */
   model?: string
@@ -86,6 +90,8 @@ export interface NodeConfig {
   runInputs?: RunInputDef[]
   /** Prompt_Node only. Overrides the toStepKey(node.id)-derived key. */
   stepKey?: string
+  /** Output_Node only. Defaults to 'text' when unset. */
+  displayFormat?: OutputDisplayFormat
 }
 
 export interface GraphNode {
@@ -160,17 +166,30 @@ export interface Workflow {
 export type StepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped'
 export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
+/** A step's outputs. `json`/`format_error` are only ever set by a "format"
+ * step (Output_Node) whose `format` is `'json'` -- see `_format_output` in
+ * services/execution-service. */
+export interface StepOutputs {
+  text?: string
+  json?: unknown
+  format_error?: string
+}
+
 export interface ExecutionStep {
   id: string
   execution_id: string
   step_key: string
   depends_on: string[]
   conditions: { source_step: string; op: EdgeConditionOp; value?: string }[] | null
+  /** "prompt" (default, calls an AI provider) or "format" (Output_Node;
+   * reformats a single upstream step's output, no provider call). */
+  step_type: 'prompt' | 'format'
+  format: OutputDisplayFormat | null
   provider: string
   model_key: string
   prompt: string | null
   inputs: Record<string, unknown> | null
-  outputs: { text?: string } | null
+  outputs: StepOutputs | null
   status: StepStatus
   retry_count: number
   error_message: string | null
@@ -201,7 +220,7 @@ export interface ExecutionStreamEvent {
     step_key: string
     status: StepStatus
     retry_count: number
-    outputs: { text?: string } | null
+    outputs: StepOutputs | null
     error_message: string | null
   }[]
 }

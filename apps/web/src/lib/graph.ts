@@ -1,4 +1,10 @@
-import type { EdgeConditionOp, GraphEdge, GraphNode, WorkflowGraph } from '@/types'
+import type {
+  EdgeConditionOp,
+  GraphEdge,
+  GraphNode,
+  OutputDisplayFormat,
+  WorkflowGraph,
+} from '@/types'
 import { getRunInputs, RUN_INPUT_KEY_PATTERN } from '@/lib/run-inputs'
 
 export const FREE_MODELS = [
@@ -11,9 +17,11 @@ export const DEFAULT_MODEL = FREE_MODELS[0].id
 /** Provider key understood by the execution service registry. */
 const PROVIDER = 'openrouter'
 
-/** Only prompt nodes produce an execution step. */
+/** Prompt and Output nodes produce an execution step (a "prompt" step that
+ * calls a model, or a "format" step that reformats its single upstream
+ * dependency's text). Start and Decision nodes never do. */
 export function isExecutable(node: GraphNode): boolean {
-  return node.type === 'prompt'
+  return node.type === 'prompt' || node.type === 'output'
 }
 
 /**
@@ -38,6 +46,11 @@ export interface ExecutionStepPayload {
   step_key: string
   depends_on: string[]
   conditions: StepConditionPayload[]
+  /** "prompt" (Prompt_Node): calls an AI provider. "format" (Output_Node):
+   * reformats its single upstream dependency's text, no provider call. */
+  step_type: 'prompt' | 'format'
+  /** Only meaningful for step_type "format". */
+  format?: OutputDisplayFormat
   provider: string
   model_key: string
   prompt: string
@@ -82,10 +95,11 @@ function buildIncomingEdges(
 }
 
 /**
- * Prompt_Node ids transitively reachable upstream through non-executable
- * nodes, stopping at (and collecting) the first executable ancestor on each
- * path. Used both by `graphToSteps` for `depends_on` and by the Variable
- * Picker for its list of referenceable upstream steps.
+ * Executable (Prompt_Node or Output_Node) ids transitively reachable
+ * upstream through non-executable nodes, stopping at (and collecting) the
+ * first executable ancestor on each path. Used both by `graphToSteps` for
+ * `depends_on` and by the Variable Picker for its list of referenceable
+ * upstream steps.
  */
 export function executableAncestors(graph: WorkflowGraph, nodeId: string): string[] {
   const byId = buildById(graph)
@@ -121,10 +135,10 @@ export function stepReferenceKey(node: GraphNode): string {
 }
 
 /**
- * The single Prompt_Node ancestor whose output a Decision_Node's branch
- * conditions are evaluated against, or `undefined` if the decision has zero
- * or more than one upstream Prompt_Node (ambiguous -- reported as a
- * validation error by `graphToSteps` rather than guessed at).
+ * The single upstream step (Prompt_Node or Output_Node) whose output a
+ * Decision_Node's branch conditions are evaluated against, or `undefined`
+ * if the decision has zero or more than one upstream step (ambiguous --
+ * reported as a validation error by `graphToSteps` rather than guessed at).
  */
 export function decisionSourceStepKey(
   graph: WorkflowGraph,
@@ -141,7 +155,7 @@ export function decisionSourceStepKey(
  * same upstream, non-executable-node BFS as `executableAncestors`. Every
  * Decision_Node edge traversed on the way -- including through nested
  * decisions -- contributes one AND-ed condition, evaluated against the
- * decision's own single Prompt_Node ancestor. Traversal (like
+ * decision's own single upstream step. Traversal (like
  * `executableAncestors`) stops upstream of the first executable ancestor
  * reached on each path: that node's own gating is its own concern, not
  * `nodeId`'s.
@@ -245,11 +259,10 @@ export function extractPlaceholders(template: string): string[] {
 }
 
 /**
- * Convert a builder graph into execution steps.
- *
- * Non-executable nodes (start/decision/output) are not steps, so dependencies
- * are resolved transitively through them. Otherwise the engine would reject the
- * run with "Unknown dependency".
+ * Convert a builder graph into execution steps. Prompt and Output nodes each
+ * become a step ("prompt" and "format" respectively); Start and Decision
+ * nodes are not steps, so dependencies are resolved transitively through
+ * them. Otherwise the engine would reject the run with "Unknown dependency".
  */
 export function graphToSteps(graph: WorkflowGraph): BuildResult {
   const errors: string[] = []
@@ -264,16 +277,41 @@ export function graphToSteps(graph: WorkflowGraph): BuildResult {
   }
 
   const steps: ExecutionStepPayload[] = executable.map((node) => {
+    const dependsOn = executableAncestors(graph, node.id).map((id) =>
+      stepReferenceKey(byId.get(id)!)
+    )
+
+    if (node.type === 'output') {
+      // A format step reformats exactly one upstream step's text; it never
+      // calls a provider, so there's no prompt/model to validate.
+      if (dependsOn.length !== 1) {
+        errors.push(
+          `Output node "${node.label || node.id}" must have exactly one upstream ` +
+            `step to display (found ${dependsOn.length}).`
+        )
+      }
+      return {
+        step_key: stepReferenceKey(node),
+        depends_on: dependsOn,
+        conditions: conditionsForNode(graph, node.id),
+        step_type: 'format',
+        format: node.config?.displayFormat || 'text',
+        provider: PROVIDER,
+        model_key: node.config?.model || DEFAULT_MODEL,
+        prompt: '',
+        inputs: {},
+      }
+    }
+
     const prompt = node.config?.prompt?.trim() || ''
     if (!prompt) {
       errors.push(`Node "${node.label || node.id}" has no prompt text.`)
     }
     return {
       step_key: stepReferenceKey(node),
-      depends_on: executableAncestors(graph, node.id).map((id) =>
-        stepReferenceKey(byId.get(id)!)
-      ),
+      depends_on: dependsOn,
       conditions: conditionsForNode(graph, node.id),
+      step_type: 'prompt',
       provider: PROVIDER,
       model_key: node.config?.model || DEFAULT_MODEL,
       prompt,
@@ -282,15 +320,15 @@ export function graphToSteps(graph: WorkflowGraph): BuildResult {
   })
 
   // Decision-node well-formedness: a Decision_Node must have exactly one
-  // upstream Prompt_Node to evaluate conditions against (Req: decision
-  // branching). Zero means nothing to branch on; more than one is ambiguous
-  // about which output the condition refers to.
+  // upstream step to evaluate conditions against (Req: decision branching).
+  // Zero means nothing to branch on; more than one is ambiguous about which
+  // output the condition refers to.
   for (const node of nodes.filter((n) => n.type === 'decision')) {
     const ancestors = executableAncestors(graph, node.id)
     if (ancestors.length !== 1) {
       errors.push(
         `Decision node "${node.label || node.id}" must have exactly one upstream ` +
-          `Prompt node to branch on (found ${ancestors.length}).`
+          `step to branch on (found ${ancestors.length}).`
       )
     }
     const outgoingConditioned = (graph.edges || []).some(

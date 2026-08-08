@@ -40,7 +40,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import type { EdgeCondition, GraphNode, NodeConfig, NodeType, Workflow, WorkflowGraph } from '@/types'
+import type {
+  EdgeCondition,
+  GraphNode,
+  NodeConfig,
+  NodeType,
+  OutputDisplayFormat,
+  Workflow,
+  WorkflowGraph,
+} from '@/types'
 import {
   DEFAULT_MODEL,
   FREE_MODELS,
@@ -525,6 +533,30 @@ function Builder({ existing }: { existing: Workflow | null }) {
                   runInputs={selected.data.config.runInputs ?? []}
                   onChange={(next) => updateSelectedConfig({ runInputs: next })}
                 />
+              ) : selected.data.nodeType === 'output' ? (
+                <div className="space-y-1">
+                  <Label htmlFor="node-display-format">Display format</Label>
+                  <Select
+                    value={selected.data.config.displayFormat || 'text'}
+                    onValueChange={(v) =>
+                      updateSelectedConfig({ displayFormat: v as OutputDisplayFormat })
+                    }
+                  >
+                    <SelectTrigger id="node-display-format">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">Plain text</SelectItem>
+                      <SelectItem value="markdown">Markdown</SelectItem>
+                      <SelectItem value="json">JSON</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Reformats its single upstream node's output when the workflow runs.
+                    {selected.data.config.displayFormat === 'json' &&
+                      ' Fails gracefully if the upstream output is not valid JSON.'}
+                  </p>
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Only Prompt nodes call a model. This node just shapes the flow.
@@ -567,10 +599,21 @@ function Builder({ existing }: { existing: Workflow | null }) {
                         {s.status === 'skipped' ? <span className="italic">skipped</span> : s.status}
                       </span>
                     </div>
-                    {s.outputs?.text && (
-                      <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">
-                        {s.outputs.text}
-                      </p>
+                    {s.format === 'json' && s.outputs?.json !== undefined ? (
+                      <pre className="mt-1 text-xs whitespace-pre-wrap rounded bg-muted p-2">
+                        {JSON.stringify(s.outputs.json, null, 2)}
+                      </pre>
+                    ) : (
+                      <>
+                        {s.outputs?.format_error && (
+                          <p className="mt-1 text-xs text-amber-600">{s.outputs.format_error}</p>
+                        )}
+                        {s.outputs?.text && (
+                          <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">
+                            {s.outputs.text}
+                          </p>
+                        )}
+                      </>
                     )}
                     {s.error_message && (
                       <p className="mt-1 text-xs text-destructive">{s.error_message}</p>

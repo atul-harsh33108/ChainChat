@@ -51,6 +51,11 @@ class ExecutionStep(Base):
     step_key: Mapped[str] = mapped_column(String, nullable=False)
     depends_on: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
     conditions: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    # "prompt" (default): calls an AI provider. "format": reformats a single
+    # upstream step's output (Output_Node) without calling any provider.
+    step_type: Mapped[str] = mapped_column(String, nullable=False, default="prompt")
+    # Only meaningful when step_type == "format": "text" | "markdown" | "json".
+    format: Mapped[str | None] = mapped_column(String, nullable=True)
     provider: Mapped[str] = mapped_column(String, nullable=False)
     model_key: Mapped[str] = mapped_column(String, nullable=False)
     prompt: Mapped[str | None] = mapped_column(Text, nullable=True)

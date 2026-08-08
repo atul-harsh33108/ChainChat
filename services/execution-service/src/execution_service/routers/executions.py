@@ -35,6 +35,8 @@ async def _build_execution(session: AsyncSession, data: ExecutionCreate) -> Exec
             step_key=step_create.step_key,
             depends_on=step_create.depends_on,
             conditions=step_create.conditions,
+            step_type=step_create.step_type,
+            format=step_create.format,
             provider=step_create.provider,
             model_key=step_create.model_key,
             prompt=step_create.prompt,

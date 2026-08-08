@@ -4,6 +4,7 @@ Feature: run-inputs-and-variables
 Validates: Requirements 4 (Criteria 4, 5); Requirement 8 (Criterion 3)
 """
 
+import json
 import uuid
 from unittest.mock import AsyncMock, patch
 
@@ -191,3 +192,123 @@ async def test_mark_step_status_skipped_sets_completed_at():
     assert step.status == "skipped"
     assert step.outputs == {}
     assert step.completed_at is not None
+
+
+# --- Output-node execution (format steps, GAP-08 completion) ---------------
+#
+# Covers `_format_output` and `_run_format_step`: an Output_Node becomes a
+# real step (step_type="format") that reformats its single upstream
+# dependency's text without calling any AI provider.
+
+from src.execution_service.engine import _format_output, _run_format_step
+
+
+class TestFormatOutput:
+    def test_text_format_passes_through_verbatim(self):
+        assert _format_output("text", "hello world") == {"text": "hello world"}
+
+    def test_markdown_format_passes_through_verbatim(self):
+        assert _format_output("markdown", "# Heading\n\nBody") == {
+            "text": "# Heading\n\nBody"
+        }
+
+    def test_none_format_defaults_to_text_passthrough(self):
+        assert _format_output(None, "plain") == {"text": "plain"}
+
+    def test_json_format_parses_and_pretty_prints(self):
+        result = _format_output("json", '{"a": 1, "b": [2, 3]}')
+        assert result["json"] == {"a": 1, "b": [2, 3]}
+        assert json.loads(result["text"]) == {"a": 1, "b": [2, 3]}
+
+    def test_json_format_strips_fenced_code_block(self):
+        fenced = '```json\n{"ok": true}\n```'
+        result = _format_output("json", fenced)
+        assert result["json"] == {"ok": True}
+
+    def test_json_format_strips_fenced_code_block_without_language_tag(self):
+        fenced = '```\n{"ok": true}\n```'
+        result = _format_output("json", fenced)
+        assert result["json"] == {"ok": True}
+
+    def test_json_format_invalid_json_reports_error_without_raising(self):
+        result = _format_output("json", "not json at all")
+        assert result["text"] == "not json at all"
+        assert "format_error" in result
+        assert "json" not in result
+
+
+@pytest.mark.asyncio
+async def test_run_format_step_reformats_single_upstream_dependency():
+    step = ExecutionStep(
+        id=uuid.uuid4(),
+        execution_id=uuid.uuid4(),
+        step_key="render",
+        depends_on=["extract"],
+        step_type="format",
+        format="json",
+        provider="openrouter",
+        model_key="google/gemma-4-31b-it:free",
+    )
+    session = AsyncMock()
+    session.commit = AsyncMock()
+    upstream_outputs = {"extract": {"text": '{"score": 5}'}}
+
+    outputs = await _run_format_step(session, step, upstream_outputs)
+
+    assert outputs["json"] == {"score": 5}
+    assert step.status == "completed"
+    assert step.outputs == outputs
+    assert step.completed_at is not None
+
+
+@pytest.mark.asyncio
+async def test_run_format_step_with_no_dependency_formats_empty_text():
+    step = ExecutionStep(
+        id=uuid.uuid4(),
+        execution_id=uuid.uuid4(),
+        step_key="render",
+        depends_on=[],
+        step_type="format",
+        format="text",
+        provider="openrouter",
+        model_key="google/gemma-4-31b-it:free",
+    )
+    session = AsyncMock()
+    session.commit = AsyncMock()
+
+    outputs = await _run_format_step(session, step, {})
+
+    assert outputs == {"text": ""}
+    assert step.status == "completed"
+
+
+class TestFormatStepSkipCascading:
+    """A format step (Output_Node) is just another step to `_step_should_be_skipped`:
+    it cascade-skips like any other step when its single dependency was skipped."""
+
+    def test_format_step_cascades_skip_from_skipped_dependency(self):
+        step = ExecutionStep(
+            id=uuid.uuid4(),
+            execution_id=uuid.uuid4(),
+            step_key="render",
+            depends_on=["extract"],
+            step_type="format",
+            format="text",
+            provider="openrouter",
+            model_key="google/gemma-4-31b-it:free",
+        )
+        assert _step_should_be_skipped(step, {}, {"extract"}) is True
+
+    def test_format_step_runs_when_dependency_not_skipped(self):
+        step = ExecutionStep(
+            id=uuid.uuid4(),
+            execution_id=uuid.uuid4(),
+            step_key="render",
+            depends_on=["extract"],
+            step_type="format",
+            format="text",
+            provider="openrouter",
+            model_key="google/gemma-4-31b-it:free",
+        )
+        upstream = {"extract": {"text": "some text"}}
+        assert _step_should_be_skipped(step, upstream, set()) is False

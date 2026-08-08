@@ -1,4 +1,6 @@
 import asyncio
+import json
+import re
 from collections import deque
 from datetime import datetime, timezone
 from typing import Any
@@ -55,6 +57,51 @@ async def _mark_step_status(
         step.completed_at = now
 
     await session.commit()
+
+
+def _format_output(fmt: str | None, text: str) -> dict[str, Any]:
+    """Reformat an Output_Node's single upstream dependency's text per
+    ``fmt``. Never raises: a malformed 'json' input degrades to reporting the
+    parse failure in the step's output rather than failing the run, since the
+    Output_Node is a display concern, not something worth erroring the whole
+    execution over.
+
+    - "text" / "markdown": passed through verbatim (Markdown is rendered by
+      the client; there's nothing to transform server-side).
+    - "json": parses `text` as JSON (stripping a ```json ... ``` fence if
+      present, since models commonly wrap JSON that way) and returns the
+      parsed value pretty-printed; on parse failure, returns the original
+      text alongside an error note.
+    """
+    if fmt != "json":
+        return {"text": text}
+
+    candidate = text.strip()
+    fenced = re.match(r"^```(?:json)?\s*\n(.*)\n```$", candidate, re.DOTALL)
+    if fenced:
+        candidate = fenced.group(1).strip()
+
+    try:
+        parsed = json.loads(candidate)
+    except json.JSONDecodeError as exc:
+        return {"text": text, "format_error": f"Not valid JSON: {exc}"}
+
+    return {"text": json.dumps(parsed, indent=2), "json": parsed}
+
+
+async def _run_format_step(
+    session: AsyncSession,
+    step: ExecutionStep,
+    upstream_outputs: dict[str, Any],
+) -> dict[str, Any]:
+    """Run an Output_Node's step: no AI provider call, just a reformat of its
+    single upstream dependency's text (Req: output node execution)."""
+    await _mark_step_status(session, step, "running")
+    source_key = (step.depends_on or [None])[0]
+    source_text = _extract_output_text(upstream_outputs.get(source_key))
+    outputs = _format_output(step.format, source_text)
+    await _mark_step_status(session, step, "completed", outputs=outputs)
+    return outputs
 
 
 def _extract_output_text(outputs: dict[str, Any] | None) -> str:
@@ -270,14 +317,17 @@ async def run_execution(execution_id: Any, max_retries: int = 2) -> None:
                     context[step.step_key] = {}
                     continue
 
-                outputs = await _run_step_with_retries(
-                    session,
-                    execution,
-                    step,
-                    upstream_outputs,
-                    input_payload,
-                    max_retries=max_retries,
-                )
+                if step.step_type == "format":
+                    outputs = await _run_format_step(session, step, upstream_outputs)
+                else:
+                    outputs = await _run_step_with_retries(
+                        session,
+                        execution,
+                        step,
+                        upstream_outputs,
+                        input_payload,
+                        max_retries=max_retries,
+                    )
                 upstream_outputs[step.step_key] = outputs
                 context[step.step_key] = outputs
 
