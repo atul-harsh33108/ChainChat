@@ -1,5 +1,4 @@
 import asyncio
-import re
 from collections import deque
 from datetime import datetime, timezone
 from typing import Any
@@ -15,6 +14,7 @@ from src.execution_service.ai import get_provider
 from src.execution_service.config import settings
 from src.execution_service.db import AsyncSessionLocal
 from src.execution_service.models import Execution, ExecutionStep
+from src.execution_service.rendering import render_prompt, resolve_variables
 
 logger = structlog.get_logger()
 
@@ -60,32 +60,6 @@ async def _mark_step_status(
 async def _check_cancelled(session: AsyncSession, execution: Execution) -> bool:
     await session.refresh(execution)
     return execution.status == "cancelled"
-
-
-_PLACEHOLDER = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
-
-
-def _render_prompt(template: str, variables: dict[str, Any]) -> str:
-    """Substitute ``{name}`` placeholders, leaving unknown ones untouched.
-
-    ``str.format`` is unusable here: a literal brace in a prompt raises
-    ValueError, a missing key raises KeyError, and a prior step's output (a dict
-    like ``{"text": ...}``) would render as a Python repr. This resolves step
-    outputs to their text and passes anything unrecognised through unchanged.
-    """
-    if not template:
-        return ""
-
-    def replace(match: "re.Match[str]") -> str:
-        key = match.group(1)
-        if key not in variables:
-            return match.group(0)
-        value = variables[key]
-        if isinstance(value, dict) and "text" in value:
-            return str(value["text"])
-        return str(value)
-
-    return _PLACEHOLDER.sub(replace, template)
 
 
 def _friendly_error(exc: Exception) -> str:
@@ -134,12 +108,16 @@ async def _run_step_with_retries(
     session: AsyncSession,
     execution: Execution,
     step: ExecutionStep,
-    context: dict[str, Any],
+    upstream_outputs: dict[str, Any],
+    input_payload: dict[str, Any],
     max_retries: int = 2,
 ) -> dict[str, Any]:
     provider = get_provider(step.provider)
-    variables = {**(step.inputs or {}), **context}
-    rendered = _render_prompt(step.prompt or "", variables)
+    # input_payload is merged last so it always wins over an upstream step's
+    # output when a key is present in both (Req 4.5), regardless of step
+    # completion order.
+    variables = resolve_variables(step.inputs or {}, upstream_outputs, input_payload)
+    rendered = render_prompt(step.prompt or "", variables)
 
     for attempt in range(max_retries + 1):
         if await _check_cancelled(session, execution):
@@ -215,7 +193,9 @@ async def run_execution(execution_id: Any, max_retries: int = 2) -> None:
         execution.status = "running"
         await session.commit()
 
-        context: dict[str, Any] = dict(execution.input_payload or {})
+        input_payload: dict[str, Any] = dict(execution.input_payload or {})
+        upstream_outputs: dict[str, Any] = {}
+        context: dict[str, Any] = dict(input_payload)  # preserves existing output_payload shape
 
         try:
             ordered = await _topological_steps(list(execution.steps))
@@ -224,8 +204,14 @@ async def run_execution(execution_id: Any, max_retries: int = 2) -> None:
                     raise ExecutionCancelledError()
 
                 outputs = await _run_step_with_retries(
-                    session, execution, step, context, max_retries=max_retries
+                    session,
+                    execution,
+                    step,
+                    upstream_outputs,
+                    input_payload,
+                    max_retries=max_retries,
                 )
+                upstream_outputs[step.step_key] = outputs
                 context[step.step_key] = outputs
 
             execution.output_payload = context

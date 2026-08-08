@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useOrganization, useUser } from '@clerk/clerk-react'
 import { useWorkflow, useExecutions } from '@/hooks/workflows'
@@ -7,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import type { ExecutionStatus } from '@/types'
+import { classifyInputValue, hasNoInputs } from '@/lib/input-payload-display'
 
 export function WorkflowRunsPage() {
   const { workspaceId, workflowId } = useParams()
@@ -52,6 +54,26 @@ export function WorkflowRunsPage() {
               <CardContent className="space-y-2">
                 {run.error_message && (
                   <p className="text-sm text-destructive">{run.error_message}</p>
+                )}
+                {hasNoInputs(run.input_payload) ? (
+                  <p className="text-sm text-muted-foreground">No inputs</p>
+                ) : (
+                  <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-sm">
+                    {Object.entries(run.input_payload!).map(([key, value]) => (
+                      <Fragment key={key}>
+                        <dt className="font-medium text-muted-foreground">{key}</dt>
+                        <dd>
+                          {classifyInputValue(value) === 'scalar' ? (
+                            String(value)
+                          ) : (
+                            <pre className="whitespace-pre-wrap text-xs">
+                              {JSON.stringify(value, null, 2)}
+                            </pre>
+                          )}
+                        </dd>
+                      </Fragment>
+                    ))}
+                  </dl>
                 )}
                 {run.steps.map((step) => (
                   <div key={step.id} className="rounded border p-2">

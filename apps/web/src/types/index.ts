@@ -63,11 +63,29 @@ export interface ProGrant {
 
 export type NodeType = 'start' | 'prompt' | 'decision' | 'output'
 
+export type RunInputFieldType = 'text' | 'textarea' | 'number' | 'select'
+
+/** Stored inside a Start_Node's NodeConfig.runInputs, in declaration order. */
+export interface RunInputDef {
+  key: string // Run_Input_Key: ^[A-Za-z_][A-Za-z0-9_]*$, <= 64 chars
+  label: string // <= 200 chars
+  fieldType: RunInputFieldType
+  required: boolean // defaults to false when absent
+  defaultValue?: string | number
+  helpText?: string // <= 500 chars
+  placeholder?: string // <= 200 chars
+  options?: string[] // required + 1..100 unique entries iff fieldType === 'select'
+}
+
 export interface NodeConfig {
   /** OpenRouter model id, e.g. "google/gemma-4-31b-it:free". */
   model?: string
   prompt?: string
   temperature?: number
+  /** Start_Node only. Declared Run_Inputs, in author-defined order. */
+  runInputs?: RunInputDef[]
+  /** Prompt_Node only. Overrides the toStepKey(node.id)-derived key. */
+  stepKey?: string
 }
 
 export interface GraphNode {

@@ -1,0 +1,814 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add `fast-check` and `hypothesis` as pinned dev dependencies": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178009072
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178027766
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178421877
+      }
+    ],
+    "1.2 Create the shared placeholder-extraction fixture table": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178009628
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178028149
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178422805
+      }
+    ],
+    "2.1 Implement `services/execution-service/src/execution_service/rendering.py`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178009772
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178028834
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178423640
+      }
+    ],
+    "3.1 Update `engine.py` to render via `resolve_variables` + `render_prompt`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178009844
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178452944
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179916582
+      }
+    ],
+    "4. Checkpoint - backend rendering and precedence": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178009923
+      }
+    ],
+    "5.1 Extend `apps/web/src/types/index.ts`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010011
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178029585
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178424668
+      }
+    ],
+    "6.1 Implement `apps/web/src/lib/run-inputs.ts`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010076
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178453742
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179917312
+      }
+    ],
+    "7.1 Export `executableAncestors` and add `stepReferenceKey`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010139
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178454953
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179918002
+      }
+    ],
+    "7.3 Implement `extractPlaceholders` in graph.ts": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010236
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182633782
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183151977
+      }
+    ],
+    "7.5 Add collision, well-formedness, and unresolved-reference validation to `graphToSteps`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010296
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183695732
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183888271
+      }
+    ],
+    "8.1 Implement `apps/web/src/lib/input-payload-display.ts`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010360
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178030416
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178425238
+      }
+    ],
+    "9. Checkpoint - core libraries and validation": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010422
+      }
+    ],
+    "10.1 Implement `apps/web/src/components/workflow/run-input-editor.tsx`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010476
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182634880
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183154499
+      }
+    ],
+    "11.1 Implement `apps/web/src/components/workflow/variable-picker.tsx`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010529
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182635983
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183153814
+      }
+    ],
+    "12.1 Implement `apps/web/src/components/workflow/run-dialog.tsx`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010582
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182636649
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183152717
+      }
+    ],
+    "13.1 Wire the Start node inspector to `run-input-editor.tsx`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010643
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185088669
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185483575
+      }
+    ],
+    "13.2 Wire the Prompt node inspector's Variable Picker": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010695
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185504596
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185647956
+      }
+    ],
+    "13.3 Add `pendingRun` state and conditional `RunDialog` rendering": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010746
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185669914
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185810855
+      }
+    ],
+    "13.4 Update `handleRun`/`submitRun` to branch on declared Run_Inputs": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010807
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185831094
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185909836
+      }
+    ],
+    "14.1 Add an Inputs block to `workflow-runs.tsx`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010859
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183696370
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183887229
+      }
+    ],
+    "15. Final checkpoint - full feature verification": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178010916
+      }
+    ],
+    "1. Set up property-testing dependencies and the shared placeholder-extraction fixture table": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178422870
+      }
+    ],
+    "2. Implement prompt rendering (execution-service)": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178423698
+      }
+    ],
+    "5. Add Run Input and Step Reference Key types": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178424748
+      }
+    ],
+    "8. Implement input-payload-display.ts": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786178425289
+      }
+    ],
+    "3. Fix engine.py precedence using rendering.py": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179916907
+      }
+    ],
+    "6. Implement the run-inputs.ts library": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179917574
+      }
+    ],
+    "2.2 Write property test for rendering identity/idempotence": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179957855
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180099921
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180607813
+      }
+    ],
+    "2.3 Write property test for rendering never raising": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179958611
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180100838
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180608870
+      }
+    ],
+    "2.4 Write property test for `{\"text\": v}` vs. plain-string equivalence": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179959620
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180101742
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180609507
+      }
+    ],
+    "2.5 Write property test for `input_payload` precedence": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179960359
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180102349
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180610828
+      }
+    ],
+    "2.6 Write property test for per-step resolvability of `input_payload` keys": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179961766
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180103335
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180611255
+      }
+    ],
+    "2.7 Write fixture-table-driven unit tests for `render_prompt`/`extract_placeholder_names`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179962540
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180619765
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182034081
+      }
+    ],
+    "3.2 Write unit test for engine.py's precedence integration": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179963248
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180620976
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182035883
+      }
+    ],
+    "6.2 Write property test for Run_Input round-tripping through storage": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179964316
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180621623
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182034775
+      }
+    ],
+    "6.3 Write property test for `validateRunInput`'s acceptance predicate": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179965458
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180622653
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182033043
+      }
+    ],
+    "6.4 Write unit tests for representative invalid Run_Input error strings": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179966195
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180623422
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182036622
+      }
+    ],
+    "6.5 Write property test for `buildInputPayload`'s exactness": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786179966971
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182045067
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182604606
+      }
+    ],
+    "8.2 Write property test for `classifyInputValue`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180060088
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182046193
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182602906
+      }
+    ],
+    "8.3 Write property test for `hasNoInputs`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786180060978
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182046878
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786182603537
+      }
+    ],
+    "12. Build the Run Dialog": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183152774
+      }
+    ],
+    "11. Build the Variable Picker": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183153903
+      }
+    ],
+    "10. Build the Run Input editor (Start node inspector)": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183154556
+      }
+    ],
+    "7.2 Write property test for `stepReferenceKey` stability": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183218540
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183233400
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183685238
+      }
+    ],
+    "7.4 Write fixture-table-driven unit tests for `extractPlaceholders`": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183219345
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183924555
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185072132
+      }
+    ],
+    "7.8 Write property test for rename non-propagation": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183220406
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183230172
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183687429
+      }
+    ],
+    "10.2 Write RTL unit tests for the Run Input editor": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183221105
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183231942
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183686745
+      }
+    ],
+    "11.2 Write RTL unit tests for the Variable Picker": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183222241
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183232676
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183685996
+      }
+    ],
+    "12.2 Write RTL unit tests for the Run Dialog": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183222531
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183231145
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183688267
+      }
+    ],
+    "14. Display run inputs on the Workflow Runs page": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183887335
+      }
+    ],
+    "7. Extend graph.ts with variable/reference-key support and validation": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183888353
+      }
+    ],
+    "7.6 Write property test for collision-free accepted-graph key namespace": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183912770
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183925268
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185071051
+      }
+    ],
+    "7.7 Write property test for unresolved-reference rejection": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183913777
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183926358
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185074560
+      }
+    ],
+    "7.9 Write property test for Variable_Picker entry composition": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183914547
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183927118
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185073835
+      }
+    ],
+    "7.10 Write regression test for legacy graphs": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183915288
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183927777
+      },
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185072846
+      }
+    ],
+    "14.2 Write RTL unit tests for the Inputs block": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786183916137
+      }
+    ],
+    "13. Wire Run Inputs and the Variable Picker into workflow-builder.tsx": [
+      {
+        "executionId": "e57ed771-e63f-44b8-9f46-26ff0e57e2ae",
+        "chatSessionId": "sess_78c15ba0-4e23-4066-a8af-fda56ca99fcf",
+        "timestamp": 1786185909973
+      }
+    ]
+  }
+}

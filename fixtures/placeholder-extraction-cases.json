@@ -1,0 +1,65 @@
+[
+  {
+    "name": "doubled_braces_left_literal",
+    "template": "{{x}}",
+    "variables": { "x": "X" },
+    "expectedRendered": "{{x}}",
+    "expectedNames": []
+  },
+  {
+    "name": "nested_braces_left_literal",
+    "template": "{a{b}c}",
+    "variables": { "a": "A", "b": "B", "c": "C" },
+    "expectedRendered": "{a{b}c}",
+    "expectedNames": []
+  },
+  {
+    "name": "unmatched_open_brace_left_literal",
+    "template": "{x",
+    "variables": { "x": "X" },
+    "expectedRendered": "{x",
+    "expectedNames": []
+  },
+  {
+    "name": "unmatched_close_brace_left_literal",
+    "template": "x}",
+    "variables": { "x": "X" },
+    "expectedRendered": "x}",
+    "expectedNames": []
+  },
+  {
+    "name": "valid_placeholder_followed_by_extra_close_brace_left_literal",
+    "template": "{name}}",
+    "variables": { "name": "Alice" },
+    "expectedRendered": "{name}}",
+    "expectedNames": []
+  },
+  {
+    "name": "adjacent_placeholders_both_substituted",
+    "template": "{a}{b}",
+    "variables": { "a": "A", "b": "B" },
+    "expectedRendered": "AB",
+    "expectedNames": ["a", "b"]
+  },
+  {
+    "name": "unicode_identifier_not_recognised",
+    "template": "{émoji}",
+    "variables": { "émoji": "😀" },
+    "expectedRendered": "{émoji}",
+    "expectedNames": []
+  },
+  {
+    "name": "unknown_identifier_left_literal_but_extracted",
+    "template": "{unknown}",
+    "variables": {},
+    "expectedRendered": "{unknown}",
+    "expectedNames": ["unknown"]
+  },
+  {
+    "name": "text_wrapped_variable_value_substituted",
+    "template": "{greeting}",
+    "variables": { "greeting": { "text": "Hello" } },
+    "expectedRendered": "Hello",
+    "expectedNames": ["greeting"]
+  }
+]

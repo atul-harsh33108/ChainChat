@@ -41,7 +41,18 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import type { GraphNode, NodeConfig, NodeType, Workflow, WorkflowGraph } from '@/types'
-import { DEFAULT_MODEL, FREE_MODELS, EMPTY_GRAPH, latestVersion, toStepKey } from '@/lib/graph'
+import {
+  DEFAULT_MODEL,
+  FREE_MODELS,
+  EMPTY_GRAPH,
+  latestVersion,
+  executableAncestors,
+  stepReferenceKey,
+} from '@/lib/graph'
+import { getRunInputs } from '@/lib/run-inputs'
+import { RunInputEditor } from '@/components/workflow/run-input-editor'
+import { VariablePicker } from '@/components/workflow/variable-picker'
+import { RunDialog } from '@/components/workflow/run-dialog'
 import { Play, Save, GitFork, ArrowLeft, History, Trash2 } from 'lucide-react'
 
 /** React Flow node data carried in the canvas. */
@@ -107,8 +118,13 @@ function Builder({ existing }: { existing: Workflow | null }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState(toFlowEdges(initialGraph(existing)))
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [runId, setRunId] = useState<string | null>(null)
+  const [pendingRun, setPendingRun] = useState<{
+    workflowId: string
+    graph: WorkflowGraph
+  } | null>(null)
   const { data: run } = useExecution(runId ?? undefined)
   const notifiedRef = useRef<string | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Notify once when a run reaches a terminal state.
   useEffect(() => {
@@ -223,23 +239,39 @@ function Builder({ existing }: { existing: Workflow | null }) {
     }
   }
 
-  const handleRun = async () => {
-    if (!activeId) return
-    // Persist first so the run always matches what is on screen.
-    const id = await handleSave()
-    if (!id) return
-
+  const submitRun = async (
+    workflowId: string,
+    graph: WorkflowGraph,
+    inputPayload: Record<string, unknown>
+  ) => {
     try {
       const execution = await runWorkflow.mutateAsync({
-        workspaceId: activeId,
-        workflowId: id,
-        graph: buildGraph(),
+        workspaceId: activeId!,
+        workflowId,
+        graph,
+        inputPayload,
       })
       setRunId(execution.id)
       toast({ title: 'Run started', description: `Execution ${execution.id.slice(0, 8)}` })
     } catch (err) {
       toast({ title: 'Run failed', description: errorMessage(err), variant: 'destructive' })
     }
+  }
+
+  const handleRun = async () => {
+    if (!activeId) return
+    // Persist first so the run always matches what is on screen.
+    const id = await handleSave()
+    if (!id) return
+
+    const graph = buildGraph()
+    const declared = getRunInputs(graph)
+    if (declared.length > 0) {
+      setPendingRun({ workflowId: id, graph })
+      return
+    }
+
+    await submitRun(id, graph, {})
   }
 
   const handleFork = async () => {
@@ -266,6 +298,7 @@ function Builder({ existing }: { existing: Workflow | null }) {
   const savedVersion = latestVersion(existing?.versions)
 
   return (
+    <>
     <div className="flex h-screen flex-col">
       <header className="border-b px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -389,20 +422,32 @@ function Builder({ existing }: { existing: Workflow | null }) {
                     <Label htmlFor="node-prompt">Prompt</Label>
                     <Textarea
                       id="node-prompt"
+                      ref={textareaRef}
                       rows={6}
                       placeholder="Summarise this: {start_node_id}"
                       value={selected.data.config.prompt || ''}
                       onChange={(e) => updateSelectedConfig({ prompt: e.target.value })}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Reference an upstream prompt node's output with{' '}
-                      <code>{`{${toStepKey(
-                        nodes.find((n) => n.id !== selected.id && n.data.nodeType === 'prompt')
-                          ?.id || 'step_id'
-                      )}}`}</code>
-                    </p>
+                    <VariablePicker
+                      entries={(() => {
+                        const graph = buildGraph()
+                        const runInputKeys = getRunInputs(graph).map((d) => d.key)
+                        const upstreamKeys = executableAncestors(graph, selected.id).map((id) =>
+                          stepReferenceKey(graph.nodes.find((n) => n.id === id)!)
+                        )
+                        return [...runInputKeys, ...upstreamKeys]
+                      })()}
+                      targetRef={textareaRef}
+                      value={selected.data.config.prompt || ''}
+                      onChange={(next) => updateSelectedConfig({ prompt: next })}
+                    />
                   </div>
                 </>
+              ) : selected.data.nodeType === 'start' ? (
+                <RunInputEditor
+                  runInputs={selected.data.config.runInputs ?? []}
+                  onChange={(next) => updateSelectedConfig({ runInputs: next })}
+                />
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Only Prompt nodes call a model. This node just shapes the flow.
@@ -456,6 +501,19 @@ function Builder({ existing }: { existing: Workflow | null }) {
         </aside>
       </div>
     </div>
+
+    {pendingRun && (
+      <RunDialog
+        runInputs={getRunInputs(pendingRun.graph)}
+        onCancel={() => setPendingRun(null)}
+        onConfirm={(payload) => {
+          const { workflowId, graph } = pendingRun
+          setPendingRun(null)
+          submitRun(workflowId, graph, payload)
+        }}
+      />
+    )}
+    </>
   )
 }
 
