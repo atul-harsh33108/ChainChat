@@ -62,7 +62,7 @@ import { getRunInputs } from '@/lib/run-inputs'
 import { RunInputEditor } from '@/components/workflow/run-input-editor'
 import { VariablePicker } from '@/components/workflow/variable-picker'
 import { EdgeConditionEditor } from '@/components/workflow/edge-condition-editor'
-import { StepOutputPanel } from '@/components/workflow/step-output-panel'
+import { RunStepsList } from '@/components/workflow/run-steps-list'
 import { RunDialog } from '@/components/workflow/run-dialog'
 import { Play, Save, GitFork, ArrowLeft, History, Trash2 } from 'lucide-react'
 
@@ -588,29 +588,7 @@ function Builder({ existing }: { existing: Workflow | null }) {
               <h2 className="font-semibold mb-2">
                 Run <Badge variant="outline">{run.status}</Badge>
               </h2>
-              <div className="space-y-2">
-                {run.steps.map((s) => (
-                  <div
-                    key={s.step_key}
-                    className={`rounded border p-2 ${s.status === 'skipped' ? 'opacity-60' : ''}`}
-                  >
-                    <div className="flex items-center justify-between text-sm font-medium">
-                      <span className="truncate">{s.step_key}</span>
-                      <span className="text-muted-foreground">
-                        {s.status === 'skipped' ? <span className="italic">skipped</span> : s.status}
-                      </span>
-                    </div>
-                    <StepOutputPanel
-                      stepKey={s.step_key}
-                      outputs={s.outputs}
-                      format={s.format}
-                    />
-                    {s.error_message && (
-                      <p className="mt-1 text-xs text-destructive">{s.error_message}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <RunStepsList steps={run.steps} />
             </>
           )}
         </aside>

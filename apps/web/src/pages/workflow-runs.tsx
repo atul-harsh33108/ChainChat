@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
-import type { ExecutionStatus, StepStatus } from '@/types'
+import type { ExecutionStatus } from '@/types'
 import { classifyInputValue, hasNoInputs } from '@/lib/input-payload-display'
-import { StepOutputPanel } from '@/components/workflow/step-output-panel'
+import { RunStepsList } from '@/components/workflow/run-steps-list'
 
 export function WorkflowRunsPage() {
   const { workspaceId, workflowId } = useParams()
@@ -76,36 +76,7 @@ export function WorkflowRunsPage() {
                     ))}
                   </dl>
                 )}
-                {run.steps.map((step) => (
-                  <div
-                    key={step.id}
-                    className={`rounded border p-2 ${step.status === 'skipped' ? 'opacity-60' : ''}`}
-                  >
-                    <div className="flex items-center justify-between text-sm font-medium">
-                      <span className="truncate">{step.step_key}</span>
-                      <StepStatusLabel
-                        status={step.status}
-                        retryCount={step.retry_count}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {step.step_type === 'format' ? `formats as ${step.format}` : step.model_key}
-                    </p>
-                    {step.status === 'skipped' && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Skipped: its branch condition was not met.
-                      </p>
-                    )}
-                    <StepOutputPanel
-                      stepKey={step.step_key}
-                      outputs={step.outputs}
-                      format={step.format}
-                    />
-                    {step.error_message && (
-                      <p className="mt-1 text-xs text-destructive">{step.error_message}</p>
-                    )}
-                  </div>
-                ))}
+                <RunStepsList steps={run.steps} />
               </CardContent>
             </Card>
           ))}
@@ -120,22 +91,6 @@ export function WorkflowRunsPage() {
         </Card>
       )}
     </div>
-  )
-}
-
-/** A step's status plus its retry count, right-aligned next to its key. A
- * skipped step (its branch condition was not met, or it cascades from a
- * skipped upstream decision) is visually de-emphasised rather than treated
- * as an error. */
-function StepStatusLabel({ status, retryCount }: { status: StepStatus; retryCount: number }) {
-  if (status === 'skipped') {
-    return <span className="text-muted-foreground italic">skipped</span>
-  }
-  return (
-    <span className="text-muted-foreground">
-      {status}
-      {retryCount > 0 && ` · ${retryCount} retries`}
-    </span>
   )
 }
 
