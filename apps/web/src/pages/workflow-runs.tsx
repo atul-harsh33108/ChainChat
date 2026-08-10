@@ -22,16 +22,17 @@ export function WorkflowRunsPage() {
   if (wfLoading || runsLoading) return <RunsSkeleton />
 
   return (
-    <div className="p-8 max-w-5xl">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="page-shell">
+      <div className="mb-8 flex items-center gap-3">
         <Link to={`/app/w/${activeId}/workflows/${workflowId}`}>
           <Button variant="ghost" size="icon" aria-label="Back to builder">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">{workflow?.name} · Runs</h1>
-          <p className="text-muted-foreground">Execution history and outputs.</p>
+          <p className="section-label mb-1">Execution history</p>
+          <h1 className="page-title text-2xl md:text-3xl">{workflow?.name}</h1>
+          <p className="page-subtitle">Past runs and step-level outputs.</p>
         </div>
       </div>
 
@@ -125,10 +126,10 @@ function StatusBadge({ status }: { status: ExecutionStatus }) {
 
 function RunsSkeleton() {
   return (
-    <div className="p-8 max-w-5xl space-y-4">
-      <Skeleton className="h-10 w-64" />
-      <Skeleton className="h-32" />
-      <Skeleton className="h-32" />
+    <div className="page-shell space-y-4">
+      <Skeleton className="h-10 w-64 rounded-xl" />
+      <Skeleton className="h-32 rounded-2xl" />
+      <Skeleton className="h-32 rounded-2xl" />
     </div>
   )
 }

@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, Sparkles } from 'lucide-react'
+import { Logo } from '@/components/brand/Logo'
+import { ArrowLeft, Sparkles, ArrowRight } from 'lucide-react'
 
 export function TemplatesPage() {
   const navigate = useNavigate()
@@ -18,7 +19,8 @@ export function TemplatesPage() {
       organization ||
       (
         (await setActive?.({ organization: 'first' })) as
-          { organization?: { id: string } } | undefined
+          | { organization?: { id: string } }
+          | undefined
       )?.organization
     if (!org) {
       navigate('/login')
@@ -28,16 +30,18 @@ export function TemplatesPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <div className="relative min-h-screen surface-mesh">
+      <div className="pointer-events-none absolute inset-0 surface-grain opacity-50" />
+
+      <header className="relative z-20 border-b border-border/60 bg-background/70 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          <div className="flex items-center gap-3">
             <Link to="/">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" aria-label="Back to home">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <span className="font-bold text-lg">Template gallery</span>
+            <Logo size="sm" />
           </div>
           <Link to="/login">
             <Button variant="ghost" size="sm">
@@ -47,37 +51,45 @@ export function TemplatesPage() {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-4">Start with a template</h1>
-        <p className="text-muted-foreground mb-8 max-w-2xl">
-          Browse official and community prompt-chain templates. Fork any template into your
-          workspace and customize it.
-        </p>
+      <main className="relative z-10 mx-auto max-w-6xl px-6 py-12 md:py-16">
+        <div className="mb-10 max-w-2xl animate-fade-up">
+          <p className="section-label mb-3">Template gallery</p>
+          <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
+            Start from a proven chain
+          </h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
+            Browse official and community prompt-chain templates. Fork any template into your
+            workspace and make it yours.
+          </p>
+        </div>
 
         {isLoading ? (
-          <div className="grid md:grid-cols-3 gap-6">
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
+          <div className="grid gap-5 md:grid-cols-3">
+            <Skeleton className="h-52 rounded-2xl" />
+            <Skeleton className="h-52 rounded-2xl" />
+            <Skeleton className="h-52 rounded-2xl" />
           </div>
         ) : templates?.length ? (
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid gap-5 md:grid-cols-3">
             {templates.map((t) => (
-              <Card key={t.id}>
-                <CardHeader>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="h-5 w-5" />
-                    <CardTitle className="text-lg">{t.name}</CardTitle>
+              <Card key={t.id} className="group flex flex-col hover:shadow-lift hover:-translate-y-0.5">
+                <CardHeader className="flex-1">
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                    <Sparkles className="h-4 w-4" />
                   </div>
-                  <CardDescription>{t.description || 'No description'}</CardDescription>
+                  <CardTitle className="text-lg">{t.name}</CardTitle>
+                  <CardDescription className="mt-1.5 line-clamp-3">
+                    {t.description || 'No description'}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
-                    {t.category && <Badge variant="secondary">{t.category}</Badge>}
-                    {t.is_public && <Badge>Public</Badge>}
+                  <div className="mb-4 flex flex-wrap items-center gap-2">
+                    {t.category && <Badge variant="soft">{t.category}</Badge>}
+                    {t.is_public && <Badge variant="outline">Public</Badge>}
                   </div>
-                  <Button className="w-full mt-4" onClick={() => handleUse(t.id)}>
+                  <Button className="w-full" onClick={() => handleUse(t.id)}>
                     Use template
+                    <ArrowRight className="ml-2 h-3.5 w-3.5" />
                   </Button>
                 </CardContent>
               </Card>

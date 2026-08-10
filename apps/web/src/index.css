@@ -1,59 +1,333 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Quiet Circuit — cool paper, ink, violet signal */
+    --background: 40 14% 97%;
+    --foreground: 240 8% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 8% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 8% 8%;
+    --primary: 252 56% 54%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 12% 94%;
+    --secondary-foreground: 240 8% 16%;
+    --muted: 40 10% 93%;
+    --muted-foreground: 240 5% 42%;
+    --accent: 252 70% 96%;
+    --accent-foreground: 252 45% 38%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 10% 88%;
+    --input: 40 10% 88%;
+    --ring: 252 56% 54%;
+    --radius: 0.875rem;
+
+    /* Extended tokens */
+    --success: 158 45% 32%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --canvas: 40 12% 95%;
+    --ink-soft: 240 5% 55%;
+    --glow: 252 80% 72%;
+    --shadow-color: 240 10% 20%;
+  }
+
+  .dark {
+    --background: 240 10% 6%;
+    --foreground: 40 10% 96%;
+    --card: 240 10% 9%;
+    --card-foreground: 40 10% 96%;
+    --popover: 240 10% 9%;
+    --popover-foreground: 40 10% 96%;
+    --primary: 252 70% 68%;
+    --primary-foreground: 240 10% 6%;
+    --secondary: 240 8% 14%;
+    --secondary-foreground: 40 10% 96%;
+    --muted: 240 8% 14%;
+    --muted-foreground: 240 5% 62%;
+    --accent: 252 30% 16%;
+    --accent-foreground: 252 70% 78%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 8% 16%;
+    --input: 240 8% 16%;
+    --ring: 252 70% 68%;
+    --success: 158 45% 42%;
+    --success-foreground: 0 0% 100%;
+    --canvas: 240 10% 7%;
+    --ink-soft: 240 5% 58%;
+    --glow: 252 60% 50%;
+    --shadow-color: 0 0% 0%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: 'ss01' on, 'cv11' on;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
+    color: hsl(var(--foreground));
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Subtle paper grain — artistic depth without noise overload */
+  .surface-grain {
+    background-image: radial-gradient(
+      hsl(var(--foreground) / 0.03) 0.6px,
+      transparent 0.6px
+    );
+    background-size: 12px 12px;
+  }
+
+  .surface-mesh {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(at 12% 18%, hsl(var(--primary) / 0.08) 0px, transparent 45%),
+      radial-gradient(at 88% 12%, hsl(252 80% 70% / 0.07) 0px, transparent 40%),
+      radial-gradient(at 70% 88%, hsl(200 80% 70% / 0.05) 0px, transparent 45%),
+      radial-gradient(at 20% 80%, hsl(var(--primary) / 0.04) 0px, transparent 40%);
+  }
+
+  .glass-panel {
+    @apply border border-border/70 bg-card/80 backdrop-blur-md;
+    box-shadow:
+      0 1px 0 hsl(var(--foreground) / 0.03),
+      0 12px 40px -20px hsl(var(--shadow-color) / 0.18);
+  }
+
+  .hairline {
+    @apply border border-border/80;
+  }
+
+  .page-shell {
+    @apply mx-auto w-full max-w-5xl px-6 py-10 md:px-8 md:py-12;
+  }
+
+  .page-title {
+    @apply font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl;
+  }
+
+  .page-subtitle {
+    @apply mt-1.5 text-[15px] leading-relaxed text-muted-foreground;
+  }
+
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200;
+  }
+
+  .nav-link:hover {
+    @apply bg-secondary text-foreground;
+  }
+
+  .nav-link-active {
+    @apply bg-primary text-primary-foreground shadow-sm;
+    box-shadow: 0 6px 18px -10px hsl(var(--primary) / 0.7);
+  }
+
+  .nav-link-active:hover {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  /* React Flow canvas theming */
+  .react-flow__background {
+    background-color: hsl(var(--canvas)) !important;
+  }
+
+  .react-flow__node-default,
+  .react-flow__node-input,
+  .react-flow__node-output {
+    border-radius: 12px !important;
+    border: 1px solid hsl(var(--border)) !important;
+    background: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    box-shadow:
+      0 1px 0 hsl(var(--foreground) / 0.04),
+      0 8px 24px -12px hsl(var(--shadow-color) / 0.2) !important;
+    padding: 10px 14px !important;
+  }
+
+  .react-flow__node-input {
+    border-color: hsl(var(--primary) / 0.35) !important;
+    background: hsl(var(--accent)) !important;
+  }
+
+  .react-flow__node-output {
+    border-color: hsl(var(--success) / 0.4) !important;
+  }
+
+  .react-flow__node.selected {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow:
+      0 0 0 3px hsl(var(--primary) / 0.15),
+      0 10px 28px -12px hsl(var(--primary) / 0.35) !important;
+  }
+
+  .react-flow__edge-path {
+    stroke: hsl(var(--primary) / 0.45) !important;
+    stroke-width: 1.75 !important;
+  }
+
+  .react-flow__edge.selected .react-flow__edge-path {
+    stroke: hsl(var(--primary)) !important;
+  }
+
+  .react-flow__controls {
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    box-shadow: 0 8px 24px -14px hsl(var(--shadow-color) / 0.25) !important;
+  }
+
+  .react-flow__controls-button {
+    background: hsl(var(--card)) !important;
+    border-bottom: 1px solid hsl(var(--border)) !important;
+    fill: hsl(var(--foreground)) !important;
+  }
+
+  .react-flow__controls-button:hover {
+    background: hsl(var(--secondary)) !important;
+  }
+
+  .react-flow__minimap {
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    background: hsl(var(--card)) !important;
+  }
+
+  .react-flow__handle {
+    width: 8px !important;
+    height: 8px !important;
+    border: 2px solid hsl(var(--card)) !important;
+    background: hsl(var(--primary)) !important;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.6s ease both;
+  }
+
+  .animate-float {
+    animation: float 7s ease-in-out infinite;
+  }
+
+  .animate-pulse-line {
+    animation: pulse-line 2.8s ease-in-out infinite;
+  }
+
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+  .delay-400 {
+    animation-delay: 400ms;
+  }
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulse-line {
+  0%,
+  100% {
+    stroke-dashoffset: 24;
+    opacity: 0.45;
+  }
+  50% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-float,
+  .animate-pulse-line {
+    animation: none !important;
+  }
+}

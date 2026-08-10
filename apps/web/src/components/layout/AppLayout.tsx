@@ -13,7 +13,16 @@ import { Separator } from '@/components/ui/separator'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useMe } from '@/hooks/admin'
 import { Badge } from '@/components/ui/badge'
-import { LayoutDashboard, FileText, Settings, ChevronDown, ShieldCheck, Crown } from 'lucide-react'
+import { Logo } from '@/components/brand/Logo'
+import {
+  LayoutDashboard,
+  FileText,
+  Settings,
+  ChevronDown,
+  ShieldCheck,
+  Crown,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export function AppLayout() {
   const { user } = useUser()
@@ -49,17 +58,24 @@ export function AppLayout() {
   const activeId = workspaceId || currentWorkspaceId || organization?.id || user?.id
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
-      <aside className="w-64 border-r bg-card flex flex-col">
-        <div className="p-4">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      <aside className="flex w-[15.5rem] flex-col border-r border-border/70 bg-card/60 backdrop-blur-sm">
+        <div className="space-y-4 p-4">
+          <Link to={`/app/w/${activeId}`} className="inline-flex">
+            <Logo size="sm" />
+          </Link>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
+              <Button
+                variant="outline"
+                className="h-10 w-full justify-between rounded-xl border-border/80 bg-background/60 font-medium"
+              >
                 <span className="truncate">{organization?.name || 'Personal'}</span>
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
+            <DropdownMenuContent className="w-56 rounded-xl" align="start">
               {(organizationList || []).map(
                 (item: { organization: { id: string; name: string } }) => (
                   <DropdownMenuItem
@@ -72,18 +88,23 @@ export function AppLayout() {
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/app/settings">Create workspace</Link>
+                <Link to={`/app/w/${activeId}/settings`}>Create workspace</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <Separator />
-        <nav className="flex-1 p-4 space-y-1">
+
+        <Separator className="opacity-70" />
+
+        <nav className="flex-1 space-y-1 p-3">
+          <p className="section-label mb-2 px-3">Workspace</p>
           <NavItem
             to={`/app/w/${activeId}`}
             icon={<LayoutDashboard className="h-4 w-4" />}
             label="Dashboard"
-            active={location.pathname === `/app/w/${activeId}`}
+            active={
+              location.pathname === `/app/w/${activeId}` || location.pathname === '/app'
+            }
           />
           <NavItem
             to={`/app/w/${activeId}/workflows`}
@@ -98,36 +119,42 @@ export function AppLayout() {
             active={location.pathname === `/app/w/${activeId}/settings`}
           />
           {me?.is_admin && (
-            <NavItem
-              to="/app/admin"
-              icon={<ShieldCheck className="h-4 w-4" />}
-              label="Admin"
-              active={location.pathname === '/app/admin'}
-            />
+            <>
+              <p className="section-label mb-2 mt-5 px-3">System</p>
+              <NavItem
+                to="/app/admin"
+                icon={<ShieldCheck className="h-4 w-4" />}
+                label="Admin"
+                active={location.pathname === '/app/admin'}
+              />
+            </>
           )}
         </nav>
-        <Separator />
+
+        <Separator className="opacity-70" />
+
         <div className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+          <div className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-background/50 p-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-glow">
               {user?.firstName?.[0] || user?.emailAddresses[0]?.emailAddress[0]?.toUpperCase()}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.fullName || 'User'}</p>
-              <p className="text-xs text-muted-foreground truncate">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{user?.fullName || 'User'}</p>
+              <p className="truncate text-xs text-muted-foreground">
                 {user?.emailAddresses[0]?.emailAddress}
               </p>
             </div>
             {me?.plan === 'pro' && (
-              <Badge className="shrink-0">
-                <Crown className="h-3 w-3 mr-1" />
+              <Badge variant="soft" className="shrink-0">
+                <Crown className="mr-1 h-3 w-3" />
                 Pro
               </Badge>
             )}
           </div>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">
+
+      <main className="flex-1 overflow-auto surface-mesh">
         <Outlet />
       </main>
     </div>
@@ -146,14 +173,7 @@ function NavItem({
   active: boolean
 }) {
   return (
-    <Link
-      to={to}
-      className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-        active
-          ? 'bg-primary text-primary-foreground'
-          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-      }`}
-    >
+    <Link to={to} className={cn('nav-link', active && 'nav-link-active')}>
       {icon}
       {label}
     </Link>

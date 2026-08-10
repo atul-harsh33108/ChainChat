@@ -73,12 +73,15 @@ export function AdminPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl">
-      <div className="flex items-center gap-2 mb-1">
-        <ShieldCheck className="h-6 w-6" />
-        <h1 className="text-2xl font-bold">Admin console</h1>
+    <div className="page-shell max-w-6xl">
+      <div className="mb-8">
+        <p className="section-label mb-2">System</p>
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-6 w-6 text-primary" />
+          <h1 className="page-title text-2xl md:text-3xl">Admin console</h1>
+        </div>
+        <p className="page-subtitle">Manage users and grant time-limited Pro access.</p>
       </div>
-      <p className="text-muted-foreground mb-6">Manage users and grant time-limited Pro access.</p>
 
       <form
         className="flex items-end gap-2 mb-6"

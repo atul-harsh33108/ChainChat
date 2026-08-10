@@ -20,8 +20,12 @@ export function SettingsPage() {
   const activeId = workspaceId || organization?.id
 
   return (
-    <div className="p-8 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-6">Workspace settings</h1>
+    <div className="page-shell max-w-4xl">
+      <div className="mb-8">
+        <p className="section-label mb-2">Workspace</p>
+        <h1 className="page-title">Settings</h1>
+        <p className="page-subtitle">Identity, members, and billing for this workspace.</p>
+      </div>
 
       <Tabs defaultValue="general">
         <TabsList className="mb-6">
@@ -133,7 +137,7 @@ function MembersTab() {
             {members.map((m) => (
               <div
                 key={m.id}
-                className="flex items-center justify-between rounded border px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-xl border border-border/80 bg-background/50 px-3 py-2.5 text-sm"
               >
                 <span className="truncate">
                   {m.publicUserData?.firstName || m.publicUserData?.identifier}
