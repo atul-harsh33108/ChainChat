@@ -4,13 +4,37 @@
 
 **Build, share, and run multi-step AI prompt chains — like Notion docs for AI workflows.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-[![code style: prettier](https://img.shields.io/badge/code_style-prettier-FF5A5F.svg)](https://github.com/prettier/prettier)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38B2AC?logo=tailwindcss&logoColor=white)
+![Radix UI](https://img.shields.io/badge/Radix_UI-18181B?logo=radixui&logoColor=white)
+![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-2D2A26?logoColor=white)
+![React Router](https://img.shields.io/badge/React_Router-7-CA4245?logo=reactrouter&logoColor=white)
+![React Flow](https://img.shields.io/badge/React_Flow-FF0072?logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?logo=pydantic&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?logoColor=white)
+![Alembic](https://img.shields.io/badge/Alembic-migrations-5D5D5D?logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?logo=amazonwebservices&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-844FBA?logo=terraform&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
+![Clerk](https://img.shields.io/badge/Clerk-Auth-6C47FF?logoColor=white)
+![Stripe](https://img.shields.io/badge/Stripe-635BFF?logo=stripe&logoColor=white)
+![OpenRouter](https://img.shields.io/badge/OpenRouter-AI-333333?logoColor=white)
+![ESLint](https://img.shields.io/badge/ESLint-4B32C3?logo=eslint&logoColor=white)
+![Prettier](https://img.shields.io/badge/Prettier-F7B93E?logo=prettier&logoColor=black)
+![Ruff](https://img.shields.io/badge/Ruff-FCC21B?logo=ruff&logoColor=black)
+![mypy](https://img.shields.io/badge/mypy-typed-2A6DB2?logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-0A9EDC?logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-6E96F7?logo=vitest&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-2EAD33?logo=playwright&logoColor=white)
 
 </div>
 
@@ -240,6 +264,56 @@ Full runbook: [docs/RUNBOOK.md](docs/RUNBOOK.md)
 
 For the current implementation status and the phased roadmap (P0–P9), see
 [docs/STATUS.md](docs/STATUS.md).
+
+---
+
+<div align="center">
+
+## 🧩 Built With
+
+**Frontend**
+
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38B2AC?logo=tailwindcss&logoColor=white)
+![Radix UI](https://img.shields.io/badge/Radix_UI-18181B?logo=radixui&logoColor=white)
+![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-2D2A26?logoColor=white)
+![React Router](https://img.shields.io/badge/React_Router-7-CA4245?logo=reactrouter&logoColor=white)
+![React Flow](https://img.shields.io/badge/React_Flow-FF0072?logoColor=white)
+
+**Backend & Data**
+
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?logo=pydantic&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?logoColor=white)
+![Alembic](https://img.shields.io/badge/Alembic-migrations-5D5D5D?logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
+
+**Cloud & Integrations**
+
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?logo=amazonwebservices&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-844FBA?logo=terraform&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
+![Clerk](https://img.shields.io/badge/Clerk-Auth-6C47FF?logoColor=white)
+![Stripe](https://img.shields.io/badge/Stripe-635BFF?logo=stripe&logoColor=white)
+![OpenRouter](https://img.shields.io/badge/OpenRouter-AI-333333?logoColor=white)
+
+**Quality & Testing**
+
+![ESLint](https://img.shields.io/badge/ESLint-4B32C3?logo=eslint&logoColor=white)
+![Prettier](https://img.shields.io/badge/Prettier-F7B93E?logo=prettier&logoColor=black)
+![Ruff](https://img.shields.io/badge/Ruff-FCC21B?logo=ruff&logoColor=black)
+![mypy](https://img.shields.io/badge/mypy-typed-2A6DB2?logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-0A9EDC?logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-6E96F7?logo=vitest&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-2EAD33?logo=playwright&logoColor=white)
+
+</div>
 
 ## 📄 License
 
