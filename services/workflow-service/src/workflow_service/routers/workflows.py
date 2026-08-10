@@ -110,6 +110,72 @@ async def update_workflow(
     return workflow
 
 
+@router.post("/{workflow_id}/versions/{version_id}/publish", response_model=WorkflowRead)
+async def publish_workflow_version(
+    request: Request,
+    workflow_id: UUID,
+    version_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    user_id = _current_user_id(request)
+    result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
+    workflow = result.scalar_one_or_none()
+    if not workflow:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+
+    version_result = await db.execute(
+        select(WorkflowVersion).where(
+            WorkflowVersion.id == version_id,
+            WorkflowVersion.workflow_id == workflow_id,
+        )
+    )
+    version = version_result.scalar_one_or_none()
+    if not version:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found on this workflow")
+
+    workflow.published_version_id = version.id
+    await db.commit()
+    await db.refresh(workflow)
+    logger.info(
+        "workflow_version_published",
+        workflow_id=str(workflow_id),
+        version_id=str(version_id),
+        user_id=str(user_id),
+    )
+    return workflow
+
+
+@router.post("/{workflow_id}/versions/{version_id}/unpublish", response_model=WorkflowRead)
+async def unpublish_workflow_version(
+    request: Request,
+    workflow_id: UUID,
+    version_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    user_id = _current_user_id(request)
+    result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
+    workflow = result.scalar_one_or_none()
+    if not workflow:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+
+    if workflow.published_version_id != version_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This version is not the currently published version",
+        )
+
+    workflow.published_version_id = None
+    await db.commit()
+    await db.refresh(workflow)
+    logger.info(
+        "workflow_version_unpublished",
+        workflow_id=str(workflow_id),
+        version_id=str(version_id),
+        user_id=str(user_id),
+    )
+    return workflow
+
+
 @router.delete("/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workflow(
     request: Request,

@@ -28,17 +28,17 @@ Statuses stack: an issue is fully done when it shows ✅ + 🧪 + ✋ (as applic
 
 ### Partial implementations (AUDIT §4)
 
-| ID | Feature | Phase | Status | Automated test | Manual verify | Notes |
-|---|---|---|---|---|---|---|
-| GAP-01 | Billing lifecycle (webhook state machine) | P6 | ⬜ | — | — | |
-| GAP-02 | Notifications: triggers, email, template API, UI | P7 | ⬜ | — | — | |
-| GAP-03 | Workspaces API stubbed | P4 | ⬜ | — | — | |
-| GAP-04 | Clerk webhook sync (Svix) | P4 | ⬜ | — | — | |
-| GAP-05 | Plan enforcement | P6 | ⬜ | — | — | |
-| GAP-06 | Usage / cost tracking | P6 | ⬜ | — | — | |
-| GAP-07 | Publish / share endpoints + UI | P8 | ⬜ | — | — | |
-| GAP-08 | Decision / output node execution | P8 | ⬜ | — | — | |
-| GAP-09 | Comments API + UI | P7 | ⬜ | — | — | |
+| ID     | Feature                                          | Phase | Status | Automated test | Manual verify | Notes |
+| --------| --------------------------------------------------| -------| --------| ----------------| ---------------| -------|
+| GAP-01 | Billing lifecycle (webhook state machine)        | P6    | ⬜      | —              | —             |       |
+| GAP-02 | Notifications: triggers, email, template API, UI | P7    | ⬜      | —              | —             |       |
+| GAP-03 | Workspaces API stubbed                           | P4    | ⬜      | —              | —             |       |
+| GAP-04 | Clerk webhook sync (Svix)                        | P4    | ⬜      | —              | —             |       |
+| GAP-05 | Plan enforcement                                 | P6    | ⬜      | —              | —             |       |
+| GAP-06 | Usage / cost tracking                            | P6    | ⬜      | —              | —             |       |
+| GAP-07 | Publish / share endpoints + UI                   | P8    | ⬜      | —              | —             |       |
+| GAP-08 | Decision / output node execution                 | P8    | ⬜      | —              | —             |       |
+| GAP-09 | Comments API + UI                                | P7    | ⬜      | —              | —             |       |
 
 ### Not implemented (AUDIT §5)
 
