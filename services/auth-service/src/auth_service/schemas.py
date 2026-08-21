@@ -29,14 +29,46 @@ class WorkspaceRead(BaseModel):
         from_attributes = True
 
 
+class WorkspaceCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    slug: str | None = Field(default=None, max_length=200)
+
+
 class MembershipRead(BaseModel):
     id: UUID
     user_id: UUID
     workspace_id: UUID
     role: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class MembershipCreate(BaseModel):
+    email: EmailStr
+    role: str = Field(default="viewer", pattern="^(owner|editor|viewer)$")
+
+
+class MembershipUpdate(BaseModel):
+    role: str = Field(..., pattern="^(owner|editor|viewer)$")
+
+
+class WorkspaceInviteRead(BaseModel):
+    id: UUID
+    workspace_id: UUID
+    email: EmailStr
+    role: str
+    status: str
+    expires_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class WorkspaceInviteAccept(BaseModel):
+    token: str
 
 
 class MeRead(BaseModel):

@@ -91,3 +91,26 @@ class AuditLog(Base):
     target_id: Mapped[str | None] = mapped_column(String, nullable=True)
     meta_data: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class WorkspaceInvite(Base):
+    """A pending invitation to join a workspace.
+
+    Invites are single-use and time-boxed. Accepting creates a Membership and
+    marks the invite as accepted; expiry or revocation prevents acceptance.
+    """
+
+    __tablename__ = "workspace_invites"
+    __table_args__ = {"schema": "auth"}
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("auth.workspaces.id"), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String, nullable=False, default="viewer")
+    token: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    invited_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)

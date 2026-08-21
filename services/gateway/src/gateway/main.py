@@ -4,7 +4,7 @@ import httpx
 import structlog
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from jose import jwt, exceptions as jose_exceptions
 
 from src.gateway.config import settings
@@ -103,6 +103,28 @@ async def proxy(request: Request, path: str):
     if http_client is None:
         # The lifespan handler always sets this before serving requests.
         raise HTTPException(status_code=503, detail="Gateway is not ready")
+
+    # SSE endpoints must be streamed through, not buffered, or the client would
+    # wait forever for the upstream stream to close.
+    is_stream = "/stream" in path or "/collab/stream" in path
+
+    if is_stream:
+        async def _stream():
+            try:
+                async with http_client.stream(
+                    method=request.method,
+                    url=url,
+                    headers=headers,
+                    content=body,
+                    params=dict(request.query_params),
+                ) as resp:
+                    async for chunk in resp.aiter_bytes():
+                        yield chunk
+            except httpx.RequestError as e:
+                logger.error("upstream_stream_failed", url=url, error=str(e))
+
+        return StreamingResponse(_stream(), media_type="text/event-stream")
+
     try:
         resp = await http_client.request(
             method=request.method,

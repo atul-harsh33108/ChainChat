@@ -142,7 +142,7 @@ branching/conditional execution.
       `input_payload` over a colliding `upstream_outputs` value.
     - _Requirements: Requirement 4 (Criteria 4, 5); Requirement 8 (Criterion 3)_
 
-- [~] 4. Checkpoint - backend rendering and precedence
+- [ ] 4. Checkpoint - backend rendering and precedence
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 5. Add Run Input and Step Reference Key types
@@ -290,7 +290,7 @@ branching/conditional execution.
     - **Property 19: The "no inputs" predicate matches null, undefined, and empty-object payloads exactly**
     - **Validates: Requirements 9.2, 10.3**
 
-- [~] 9. Checkpoint - core libraries and validation
+- [ ] 9. Checkpoint - core libraries and validation
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 10. Build the Run Input editor (Start node inspector)
@@ -397,7 +397,7 @@ branching/conditional execution.
       declared Run_Inputs).
     - _Requirements: Requirement 9 (Criteria 1, 2, 3); Requirement 10 (Criterion 3); Design > Components and Interfaces > `workflow-runs.tsx` (edited)_
 
-  - [~]* 14.2 Write RTL unit tests for the Inputs block
+  - [ ]* 14.2 Write RTL unit tests for the Inputs block
     - File: `apps/web/src/pages/__tests__/workflow-runs.test.tsx`
     - Covers: "No inputs" rendered for `null`/absent/empty-object
       `input_payload`; scalar values rendered inline; nested
@@ -405,7 +405,7 @@ branching/conditional execution.
       current-graph Run_Input declaration (orphaned key) still rendered.
     - _Requirements: Requirement 9 (Criteria 1, 2, 3); Requirement 10 (Criterion 3)_
 
-- [~] 15. Final checkpoint - full feature verification
+- [ ] 15. Final checkpoint - full feature verification
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

@@ -239,3 +239,35 @@ export interface Template {
   created_at: string
   updated_at: string
 }
+
+export interface Comment {
+  id: string
+  workflow_id: string
+  version_id: string | null
+  author_id: string
+  content: string
+  metadata: Record<string, unknown> | null
+  created_at: string
+  updated_at: string
+}
+
+export type GraphChangeType =
+  | 'node_upsert'
+  | 'node_delete'
+  | 'edge_upsert'
+  | 'edge_delete'
+
+export interface GraphChange {
+  type: GraphChangeType
+  node_id?: string | null
+  edge_id?: string | null
+  node?: GraphNode | null
+  edge?: GraphEdge | null
+  actor?: string | null
+  timestamp?: number
+}
+
+export interface PresenceState {
+  workflow_id: string
+  users: string[]
+}

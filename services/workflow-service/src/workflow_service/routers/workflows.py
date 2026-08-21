@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from src.workflow_service.db import get_db
 from src.workflow_service.ids import to_uuid
 from src.workflow_service.models import Workflow, WorkflowEdge, WorkflowNode, WorkflowVersion
+from src.workflow_service.permissions import current_user_id, require_role
 from src.workflow_service.schemas import (
     WorkflowCreate,
     WorkflowForkRequest,
@@ -23,24 +24,19 @@ logger = structlog.get_logger()
 router = APIRouter()
 
 
-def _current_user_id(request: Request) -> UUID:
-    user_id = request.headers.get("x-user-id")
-    if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing x-user-id header")
-    # Clerk IDs ("user_2abc...") are not UUIDs, so map them deterministically.
-    return to_uuid(user_id)
-
-
 @router.get("", response_model=list[WorkflowRead])
 async def list_workflows(
     request: Request,
     workspace_id: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = current_user_id(request)
     query = select(Workflow).options(selectinload(Workflow.versions))
     if workspace_id:
-        query = query.where(Workflow.workspace_id == to_uuid(workspace_id))
+        ws_id = to_uuid(workspace_id)
+        # A member of any role may list workflows in their own workspace.
+        await require_role(request, ws_id, "viewer")
+        query = query.where(Workflow.workspace_id == ws_id)
     result = await db.execute(query)
     workflows = result.scalars().all()
     logger.info("workflows_listed", count=len(workflows), user_id=str(user_id))
@@ -53,7 +49,7 @@ async def create_workflow(
     payload: WorkflowCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = await require_role(request, payload.workspace_id, "editor")
     workflow = Workflow(
         id=uuid4(),
         workspace_id=payload.workspace_id,
@@ -75,7 +71,7 @@ async def get_workflow(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = current_user_id(request)
     result = await db.execute(
         select(Workflow)
         .where(Workflow.id == workflow_id)
@@ -84,6 +80,7 @@ async def get_workflow(
     workflow = result.scalar_one_or_none()
     if not workflow:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    await require_role(request, workflow.workspace_id, "viewer")
     logger.info("workflow_fetched", workflow_id=str(workflow_id), user_id=str(user_id))
     return workflow
 
@@ -95,11 +92,12 @@ async def update_workflow(
     payload: WorkflowUpdate,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = current_user_id(request)
     result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
     workflow = result.scalar_one_or_none()
     if not workflow:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    await require_role(request, workflow.workspace_id, "editor")
 
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(workflow, field, value)
@@ -117,11 +115,12 @@ async def publish_workflow_version(
     version_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = current_user_id(request)
     result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
     workflow = result.scalar_one_or_none()
     if not workflow:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    await require_role(request, workflow.workspace_id, "editor")
 
     version_result = await db.execute(
         select(WorkflowVersion).where(
@@ -152,11 +151,12 @@ async def unpublish_workflow_version(
     version_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = current_user_id(request)
     result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
     workflow = result.scalar_one_or_none()
     if not workflow:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    await require_role(request, workflow.workspace_id, "editor")
 
     if workflow.published_version_id != version_id:
         raise HTTPException(
@@ -182,11 +182,12 @@ async def delete_workflow(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = current_user_id(request)
     result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
     workflow = result.scalar_one_or_none()
     if not workflow:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    await require_role(request, workflow.workspace_id, "owner")
     await db.delete(workflow)
     await db.commit()
     logger.info("workflow_deleted", workflow_id=str(workflow_id), user_id=str(user_id))
@@ -200,7 +201,7 @@ async def fork_workflow(
     payload: WorkflowForkRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = current_user_id(request)
     result = await db.execute(
         select(Workflow)
         .where(Workflow.id == workflow_id)
@@ -210,6 +211,9 @@ async def fork_workflow(
     source = result.scalar_one_or_none()
     if not source:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    # Read access to the source, and edit access to the target workspace.
+    await require_role(request, source.workspace_id, "viewer")
+    await require_role(request, payload.target_workspace_id, "editor")
 
     new_name = payload.new_name or f"{source.name} (copy)"
     forked = Workflow(
@@ -283,7 +287,11 @@ async def list_workflow_versions(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = current_user_id(request)
+    workflow = await db.get(Workflow, workflow_id)
+    if not workflow:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    await require_role(request, workflow.workspace_id, "viewer")
     result = await db.execute(
         select(WorkflowVersion)
         .where(WorkflowVersion.workflow_id == workflow_id)
@@ -302,11 +310,12 @@ async def create_workflow_version(
     payload: WorkflowVersionCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    user_id = _current_user_id(request)
+    user_id = current_user_id(request)
     workflow_result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
     workflow = workflow_result.scalar_one_or_none()
     if not workflow:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    await require_role(request, workflow.workspace_id, "editor")
 
     # Only the highest version number is needed. scalar_one_or_none() would
     # raise MultipleResultsFound as soon as a workflow has more than one

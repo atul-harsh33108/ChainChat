@@ -56,9 +56,12 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://chainchat:chainchat@postgres:5432/chainchat?options=-c%20search_path=workflow
       - REDIS_URL=redis://redis:6379/0
+      - AUTH_SERVICE_URL=http://auth-service:8000
     ports:
       - "8002:8000"
     depends_on:
+      auth-service:
+        condition: service_started
       postgres:
         condition: service_healthy
       redis:

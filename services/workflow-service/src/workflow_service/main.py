@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.workflow_service.config import settings
-from src.workflow_service.routers import health, templates, workflows
+from src.workflow_service.routers import collaboration, comments, health, templates, workflows
 
 logger = structlog.get_logger()
 
@@ -30,6 +30,8 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(workflows.router, prefix="/api/v1/workflows", tags=["workflows"])
+app.include_router(comments.router, prefix="/api/v1/workflows", tags=["comments"])
+app.include_router(collaboration.router, prefix="/api/v1/workflows", tags=["collaboration"])
 app.include_router(templates.router, prefix="/api/v1/templates", tags=["templates"])
 
 

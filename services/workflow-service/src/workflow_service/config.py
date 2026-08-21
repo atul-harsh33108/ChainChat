@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     debug: bool = False
     database_url: str = "postgresql+asyncpg://chainchat:chainchat@localhost:5432/chainchat"
     redis_url: str = "redis://localhost:6379/0"
+    auth_service_url: str = "http://localhost:8001"
 
     @field_validator("database_url")
     @classmethod
